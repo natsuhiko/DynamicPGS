@@ -11,8 +11,9 @@ $x=(x_1^\top,\ldots,x_N^\top)^\top$ where $x_{i}=(x_{i1},\ldots,x_{i,n_i})^\top$
 
 ## 1. Computing dynamic PGS using our dynamic PGS model
 
-  getDynamicPGS(x=x, pgen_dir="/path/to/your/pgen/dir/", avg_model=avg_jecs)
-
+```
+getDynamicPGS(x=x, pgen_dir="/path/to/your/pgen/dir/", avg_model=avg_jecs)
+```
 
 
 
