@@ -7,4 +7,4 @@ We provide a population average model of BMI along child age. If you think your 
 
 ## 1. Computing dynamic PGS using our dynamic PGS model
 
-$y_{i}=(y_{i1},\ldots,y_{i,n_i})^\top$
+$y^\top=(y_1^\top,\ldots,y_N^\top)$ where $y_{i}=(y_{i1},\ldots,y_{i,n_i})^\top$
