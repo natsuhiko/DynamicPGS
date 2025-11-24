@@ -9,10 +9,22 @@ $y=(y_1^\top,\ldots,y_N^\top)^\top$ where $y_{i}=(y_{i1},\ldots,y_{i,n_i})^\top$
 
 $x=(x_1^\top,\ldots,x_N^\top)^\top$ where $x_{i}=(x_{i1},\ldots,x_{i,n_i})^\top$
 
+```
+avg = getAvg(y=y, x=x, id=id, X=X)
+```
+
 ## 1. Computing dynamic PGS using our dynamic PGS model
 
 ```
-getDynamicPGS(x=x, pgen_dir="/path/to/your/pgen/dir/", avg_model=avg_jecs)
+pgs_only = getDynamicPGS(x=x, pgen_dir="/path/to/your/pgen/dir/")
+```
+
+```
+pgs_w_avg = getDynamicPGS(x=x, pgen_dir="/path/to/your/pgen/dir/", avg_model=avg_jecs)
+```
+
+```
+getDynamicPGS(x=x, pgen_dir="/path/to/your/pgen/dir/", avg_model=avg_jecs, pgs_model=pgs_own)
 ```
 
 
