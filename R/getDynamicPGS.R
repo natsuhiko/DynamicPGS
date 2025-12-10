@@ -1,5 +1,5 @@
 
-getDynamicPGS = function(xstar=0:54, PGEN="/path/to/your/pgen/dir/", ta=0:11*5, rho=500){
+getDynamicPGS = function(xstar=0:54, pgen_dir="/path/to/your/pgen/dir/", ta=0:11*5, rho=500){
     load("Data/beta0sigma2.Rbin")
     load("Data/BetaMatrix.Rbin")
     load("Data/StderrBetaMatrix.Rbin")
@@ -14,8 +14,8 @@ getDynamicPGS = function(xstar=0:54, PGEN="/path/to/your/pgen/dir/", ta=0:11*5, 
     vid=rep(NA,nrow(proxy))
     for(CHR in c(1:22,"X")){
 	cat(paste("Searching proxy variants on chromosome",CHR,"...\n"))
-	if(file.exists(paste(PGEN,"/chr",CHR,".pvar",sep=""))){
-            pvar = read.table(paste(PGEN,"/chr",CHR,".pvar",sep=""),header=F,stringsAsFactors=F,comment="#")
+	if(file.exists(paste(pgen_dir,"/chr",CHR,".pvar",sep=""))){
+            pvar = read.table(paste(pgen_dir,"/chr",CHR,".pvar",sep=""),header=F,stringsAsFactors=F,comment="#")
             names(pvar) = c("CHROM", "POS", "ID", "REF", "ALT", "INFO")
     	    vexist = vexist | (paste(proxy[,2],proxy[,3],proxy[,5],proxy[,6])%in%paste(pvar[,1],pvar[,2],pvar[,4],pvar[,5]))
     	    tmp = pvar$ID[match(paste(proxy[,2],proxy[,3],proxy[,5],proxy[,6]),paste(pvar[,1],pvar[,2],pvar[,4],pvar[,5]))]
@@ -40,16 +40,16 @@ getDynamicPGS = function(xstar=0:54, PGEN="/path/to/your/pgen/dir/", ta=0:11*5, 
     G0 = cbind(tKnm, 1) # N x M+1
 
     cat("Computing dynamic PRS at x*\n")
-    psam <- read.table(paste(PGEN,"/chr22.psam",sep=""),header=F)
+    psam <- read.table(paste(pgen_dir,"/chr22.psam",sep=""),header=F)
     E=V=0
     for(l in 1:L){
         CHR=gsub("chr","",proxy[l,2])
-        pvar <- pgenlibr::NewPvar(paste(PGEN,"/chr",CHR,".pvar",sep=""))
-        pgen <- pgenlibr::NewPgen(paste(PGEN,"/chr",CHR,".pgen",sep=""),pvar=pvar)
+        pvar <- pgenlibr::NewPvar(paste(pgen_dir,"/chr",CHR,".pvar",sep=""))
+        pgen <- pgenlibr::NewPgen(paste(pgen_dir,"/chr",CHR,".pgen",sep=""),pvar=pvar)
         gl <- pgenlibr::ReadList(pgen, GetVariantsById(pvar, vid[l]))
         gl = gl - mean(gl)
         E=E+G0%*%B[l,]%*%t(gl)
         V=V+sigma2*colSums(solve(matrix(Sinv[l,],M+1),t(G0))*t(G0))%*%t(gl^2)
     }
-    list(xstar=xstar, avg=G0%*%beta0, E=E, V=V)
+    list(xstar=xstar, avg=G0%*%beta0, E=E, SE=sqrt(V), sigma2=sigma2)
 }

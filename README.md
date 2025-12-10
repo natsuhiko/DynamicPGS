@@ -45,17 +45,10 @@ If you are interested in prediction, you can construct predicted values with pre
 upper=pgs$E[,1] + sqrt(pgs$sigma2 + pgs$SE[,1]^2)*1.96
 lower=pgs$E[,1] - sqrt(pgs$sigma2 + pgs$SE[,1]^2)*1.96
 plot(pgs$xstar, pgs$avg+pgs$E[,1], type="l")
+polygon(c(pgs$xstar, rev(pgs$xstar)), c(upper, rev(lower)), col=rgb(1,0,0,0.1), border=NA)
 ```
 
-can check the population average estimated from our data by
-```
-plot(pgs$xstar, pgs$avg, type="l")
-```  
-then you might want to check PGS for the first 10 individual by
-```
-matplot(pgs$xstar, pgs$E[,1:10], type="l")
-```
-Note that `getDynamicPGS` accepts any number, including decimal values (`xstar=11:19/10` for 1.1 to 1.9 months old), and can predict PGS outside of the constructed GP model (which is the age raging from 0 to 54 months, although not recommended).
+Note that `xstar` accepts any number, including decimal values (`xstar=11:19/10` for 1.1 to 1.9 months old), and can predict PGS outside of the constructed GP model (which is the age raging from 0 to 54 months, although not recommended).
 
 
 
