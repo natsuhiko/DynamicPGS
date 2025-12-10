@@ -10,7 +10,7 @@ git clone https://github.com/natsuhiko/DynamicPGS.git
 cd DynamicPGS
 R
 # on R
-source("Data/getDynamicPGS.R")
+source("R/getDynamicPGS.R")
 ```
 
 ## 1. Computing dynamic PGS using our model
