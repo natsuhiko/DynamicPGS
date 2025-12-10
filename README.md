@@ -1,4 +1,5 @@
 # DynamicPGS
+
 Computing dynamic polygenic scores across time using Gaussian process regression models
 
 ## 0. Constructing population average model (optional)
@@ -13,9 +14,9 @@ $x=(x_1^\top,\ldots,x_N^\top)^\top$ where $x_{i}=(x_{i1},\ldots,x_{i,n_i})^\top$
 avg = getAvg(y=y, x=x, id=id, X=X)
 ```
 
-## 1. Computing dynamic PGS using our dynamic PGS model
+## 1. Computing dynamic PGS using our model
 
-This is how we estimate PGS at child age $x^{*}$ in month using their genotype data (given by the plink2 PGEN format). To compute PGS at age of 0 to 54 months, you can simply run:
+This is how we estimate PGS at child age $x^{*}$ (in month) using their genotype data (given by the plink2 PGEN format). To compute PGS at age of 0 to 54 months, you can simply run:
 ```
 # you need to stay at the package home dir
 source("Data/getDynamicPGS.R")
