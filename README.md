@@ -27,7 +27,7 @@ chr1.pgen chr2.pgen ... chr22.pgen chrX.pgen
 ```
 It is also the case that no genotype data on X chromosome is available, the R code simply skips the missing chromosome(s) to compute PGS. 
 
-The output object `pgs` contains 4 branches, `xstar`, `avg`, `E`, `SE` and `sigma2` $\left( x^*,\ \text{the population average at } x^*\right.$, PGS, standard errors of PGS, respectively). The matrix `E` is the estimated PGS (time points x individuals). First, you might want to check PGS for the first 10 individuals as
+The output object `pgs` contains 4 branches, `xstar`, `avg`, `E`, `SE` and `sigma2` $\left( x^*,\ \text{the population average at } x^*\right)$, PGS, standard errors of PGS and residual variance estimate, respectively). The matrix `E` is the estimated PGS (time points x individuals). First, you might want to check PGS for the first 10 individuals as
 ```
 matplot(pgs$xstar, pgs$E[,1:10], type="l")
 ```
