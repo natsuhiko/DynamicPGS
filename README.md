@@ -21,6 +21,20 @@ This is how we estimate PGS at child age $x^*$ in month using their genotype dat
 source("Data/getDynamicPGS.R")
 pgs = getDynamicPGS(xstar=0:54, pgen_dir="/path/to/your/pgen/dir/")
 ```
+Here PGEN files must be named as
+```
+chr1.pgen chr2.pgen ... chr22.pgen chrX.pgen
+```
+It is also the case that no genotype data on X chromosome is available, the R code simply skips the missing chromosome(s) to compute PGS. 
+
+The output object `pgs` contains 4 branches, `xstar`, `avg`, `E` and `SE`. First, you can check the population average estimated from our data by
+```
+plot(pgs$xstar, pgs$avg)
+```  
+then you might want to check PGS for the first 10 individual by
+```
+matplot(pgs$xstar, pgs$E[,1:10], type="l")
+```
 Note that it accepts any number, including decimal value (`xstar=11:19/10` for 1.1 to 1.9 months old), and can predict PGS outside of the constructed GP model (although not recommended).
 
 
