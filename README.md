@@ -15,8 +15,9 @@ avg = getAvg(y=y, x=x, id=id, X=X)
 
 ## 1. Computing dynamic PGS using our dynamic PGS model
 
+Estimating PGS at $x^*$.
 ```
-pgs_only = getDynamicPGS(x=x, pgen_dir="/path/to/your/pgen/dir/")
+pgs_only = getDynamicPGS(xstar=xstar, pgen_dir="/path/to/your/pgen/dir/")
 ```
 
 ```
