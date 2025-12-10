@@ -4,7 +4,7 @@ Computing dynamic polygenic scores across time using Gaussian process regression
 
 ## 0. Installation
 
-You just need to download or clone the repo
+You just need to download or clone the package where your genotype data (in plink2 PGEN format) is visible:
 ```
 git clone https://github.com/natsuhiko/DynamicPGS.git
 cd DynamicPGS
@@ -13,6 +13,7 @@ R
 install.packages("pgenlibr")
 source("R/getDynamicPGS.R")
 ```
+Please also install `pgenlibr` package on R before you use.
 
 ## 1. Computing dynamic PGS using our model
 
