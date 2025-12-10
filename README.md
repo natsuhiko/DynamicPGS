@@ -27,15 +27,35 @@ chr1.pgen chr2.pgen ... chr22.pgen chrX.pgen
 ```
 It is also the case that no genotype data on X chromosome is available, the R code simply skips the missing chromosome(s) to compute PGS. 
 
-The output object `pgs` contains 4 branches, `xstar`, `avg`, `E` and `SE`. First, you can check the population average estimated from our data by
+The output object `pgs` contains 4 branches, `xstar`, `avg`, `E`, `SE` and `sigma2` ($x^*$, the population average at $x^*$, PGS, standard errors of PGS, respectively). The matrix `E` is the estimated PGS (time points x individuals). First, you might want to check PGS for the first 10 individuals as
 ```
-plot(pgs$xstar, pgs$avg)
+matplot(pgs$xstar, pgs$E[,1:10], type="l")
+```
+If you are interested in the standard error of each individual's dynamic PGS, you can use `SE` (also time points x individuals matrix) to compute, such as
+```
+# 95%tile upper and lower bounts
+upper=pgs$E[,1] + pgs$SE[,1]*1.96
+lower=pgs$E[,1] - pgs$SE[,1]*1.96
+plot(pgs$xstar, pgs$E[,1], type="l")
+polygon(c(pgs$xstar, rev(pgs$xstar)), c(upper, rev(lower)), col=rgb(1,0,0,0.1), border=NA)
+```
+If you are interested in prediction, you can construct predicted values with prediction intervals as follows:
+```
+# 95%tile upper and lower bounts
+upper=pgs$E[,1] + sqrt(pgs$sigma2 + pgs$SE[,1]^2)*1.96
+lower=pgs$E[,1] - sqrt(pgs$sigma2 + pgs$SE[,1]^2)*1.96
+plot(pgs$xstar, pgs$avg+pgs$E[,1], type="l")
+```
+
+can check the population average estimated from our data by
+```
+plot(pgs$xstar, pgs$avg, type="l")
 ```  
 then you might want to check PGS for the first 10 individual by
 ```
 matplot(pgs$xstar, pgs$E[,1:10], type="l")
 ```
-Note that it accepts any number, including decimal value (`xstar=11:19/10` for 1.1 to 1.9 months old), and can predict PGS outside of the constructed GP model (although not recommended).
+Note that `getDynamicPGS` accepts any number, including decimal values (`xstar=11:19/10` for 1.1 to 1.9 months old), and can predict PGS outside of the constructed GP model (which is the age raging from 0 to 54 months, although not recommended).
 
 
 
