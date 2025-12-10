@@ -10,6 +10,7 @@ git clone https://github.com/natsuhiko/DynamicPGS.git
 cd DynamicPGS
 R
 # on R
+install.packages("pgenlibr")
 source("R/getDynamicPGS.R")
 ```
 
