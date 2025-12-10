@@ -15,19 +15,13 @@ avg = getAvg(y=y, x=x, id=id, X=X)
 
 ## 1. Computing dynamic PGS using our dynamic PGS model
 
-Estimating PGS at $x^*$.
+This is how we estimate PGS at child age $x^*$ in month using their genotype data (given by the plink2 PGEN format). To compute PGS at age of 0 to 54 months, you can simply run:
 ```
-pgs_only = getDynamicPGS(xstar=xstar, pgen_dir="/path/to/your/pgen/dir/")
+# you need to stay at the package home dir
+source("Data/getDynamicPGS.R")
+pgs = getDynamicPGS(xstar=0:54, pgen_dir="/path/to/your/pgen/dir/")
 ```
-
-```
-pgs_w_avg = getDynamicPGS(x=x, pgen_dir="/path/to/your/pgen/dir/", avg_model=avg_jecs)
-```
-
-```
-getDynamicPGS(x=x, pgen_dir="/path/to/your/pgen/dir/", avg_model=avg_jecs, pgs_model=pgs_own)
-```
-
+Note that it accepts any number, including decimal value (`xstar=11:19/10` for 1.1 to 1.9 months old), and can predict PGS outside of the constructed GP model (although not recommended).
 
 
 
