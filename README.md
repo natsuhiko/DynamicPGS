@@ -51,6 +51,7 @@ polygon(c(pgs$xstar, rev(pgs$xstar)), c(upper, rev(lower)), col=rgb(1,0,0,0.1), 
 
 Note that `xstar` accepts any number, including decimal values (`xstar=11:19/10` for 1.1 to 1.9 months old), and can predict PGS outside of the constructed GP model (which is the age raging from 0 to 54 months, although not recommended).
 
+<!--
 ## 2. Constructing population average model (optional)
 
 We provide a population average model of BMI along child age. If you think your target population is different to the Japanese population, you can create your own model to provide an average of the target trait in your population over time. 
@@ -62,4 +63,4 @@ $x=(x_1^\top,\ldots,x_N^\top)^\top$ where $x_{i}=(x_{i1},\ldots,x_{i,n_i})^\top$
 ```
 avg = getAvg(y=y, x=x, id=id, X=X)
 ```
-
+-->
