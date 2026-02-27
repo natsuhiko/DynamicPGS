@@ -29,7 +29,7 @@ getDynamicPGS = function(xstar=0:54, pgen_dir="/path/to/your/pgen/dir/", ta=0:11
     vid = vid[vexist][map]
     beta0 = beta0sigma2[[1]]
     sigma2 = beta0sigma2[[2]]
-    cat(paste(nrow(proxy),"proxy variants out of 322 index variants were found...\n")) 
+    cat(paste(nrow(proxy),"proxy variants out of 226 index variants were found...\n")) 
      
     L = length(unique(proxy[,1]))
     M = length(ta)
