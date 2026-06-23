@@ -1,10 +1,14 @@
-print.DynamicPGS=function(x){
-    cat(paste("Number of samples: ", x$N))
-    cat(paste("Number of individuals: ", x$Nd))
-    cat(paste("Max family size: ", x$max_family_size))
-    cat(paste("Support: ", min(x$x), "to", max(x$x)))
-    cat("Covariates:");print(x$nh)
+print.DynamicPGS <- function(x, ...) {
+  cat("DynamicPGS object\n")
+  cat("Number of samples: ", x$N, "\n", sep="")
+  cat("Number of individuals: ", x$Nd, "\n", sep="")
+  cat("Max family size: ", x$max_family_size, "\n", sep="")
+  cat("Support: ", min(x$x), " to ", max(x$x), "\n", sep="")
+  cat("Covariates:\n")
+  print(x$nh)
+  invisible(x)
 }
+
 getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king_file=NULL, inducing_points=NULL, forced=F){
     
     if(is.data.frame(Data)){
