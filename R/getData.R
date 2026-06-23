@@ -1,3 +1,10 @@
+print.DynamicPGS=function(x){
+    cat(paste("Number of samples: ", x$N))
+    cat(paste("Number of individuals: ", x$Nd))
+    cat(paste("Max family size: ", x$max_family_size))
+    cat(paste("Support: ", min(x$x), "to", max(x$x)))
+    cat("Covariates:");print(x$nh)
+}
 getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king_file=NULL, inducing_points=NULL, forced=F){
     
     if(is.data.frame(Data)){
@@ -99,7 +106,9 @@ getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king_
     P = length(nh)
     Q = ncol(X)
     print(nh)
-    list(y=y, x=x, ta=ta, X=X, nh=nh, iid=iid, fid=fid, P=P, Q=Q, N=N, M=M, Nf=Nf, Nd=Nd, iid0=iid0, mapf=match(seq(N0)[narm==0][ord], seq(N0)), mapb=match(seq(N0),seq(N0)[narm==0][ord]), delta2=delta2, Lmat=Lmat, max_family_size=max_family_size)
+    adata = list(y=y, x=x, ta=ta, X=X, nh=nh, iid=iid, fid=fid, P=P, Q=Q, N=N, M=M, Nf=Nf, Nd=Nd, iid0=iid0, mapf=match(seq(N0)[narm==0][ord], seq(N0)), mapb=match(seq(N0),seq(N0)[narm==0][ord]), delta2=delta2, Lmat=Lmat, max_family_size=max_family_size)
+    class(adata)="DyanmicPGS"
+    adata
 }
 
 
