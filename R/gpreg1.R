@@ -1,4 +1,4 @@
-# improved step
+
 gpreg1 = function(adata, rho_a=0.01, rho_b=5, Verbose=F, Plot=F, MAXITR=100){
 
     rho_min=1e-3
@@ -101,6 +101,7 @@ gpreg1 = function(adata, rho_a=0.01, rho_b=5, Verbose=F, Plot=F, MAXITR=100){
     sigma2 = st$sigma2
     titsias = st$titsias
     lball = st$lb
+    fail_count = 0
 
     for(itr in 1:MAXITR){
 
@@ -193,85 +194,26 @@ gpreg1 = function(adata, rho_a=0.01, rho_b=5, Verbose=F, Plot=F, MAXITR=100){
         ss = tmp$direction
         bfgs_state_candidate = tmp$state
 
+        dirderiv = sum(grad_max * ss)
+        if(!is.finite(dirderiv) || dirderiv <= 0){
+            if(Verbose){
+                cat("BFGS direction is not ascent; use gradient direction.\n")
+                cat("directional derivative =", dirderiv, "\n")
+            }
+            ss = grad_max
+            ss = ss / max(1, max(abs(ss))) * 0.05
+            bfgs_state_candidate = NULL
+        }
+
         # conservative step clipping on log scale
         ss[ss > 0.1] = 0.1
         ss[ss < -0.1] = -0.1
 
         accepted = FALSE
 
-        for(r in 0:20){
-            if(r<11){
-                theta1 = theta + ss / 2^r
-            }else{
-                theta1 = theta - ss / 2^(r-11)
-            }
-            theta1[1:P] =
-                pmin(pmax(theta1[1:P], log(delta_min)), log(delta_max))
-
-            theta1[P+1] =
-                pmin(pmax(theta1[P+1], log(rho_min)), log(rho_max))
-
-            delta21 = exp(theta1[1:P])
-            rho1 = exp(theta1[P+1])
-
-            st1 = calc_state(delta21, rho1)
-
-            if(is.null(st1)){
-                if(Verbose) cat("r =", r, "candidate failed\n")
-                next
-            }
-
-            lb1 = st1$lb
-
-            if(Verbose){
-                cat("r =", r,
-                    "| lb1 =", lb1,
-                    "| diff =", lb1 - lball[1],
-                    "| rho1 =", rho1, "\n")
-            }
-
-            if(is.finite(lb1) && lb1 > lball[1] - 1e-8){
-                delta2 = st1$delta2
-                rho = st1$rho
-                Knm = st1$Knm
-                Kmm = st1$Kmm
-                R = st1$R
-                tKnm = st1$tKnm
-                tX = st1$tX
-                XtX = st1$XtX
-                Xty = st1$Xty
-                A = st1$A
-                PhiXty = st1$PhiXty
-                Phi = st1$Phi
-                sigma2 = st1$sigma2
-                titsias = st1$titsias
-
-                lball = c(lb1, lball)
-
-                # update BFGS state only after accepted step
-                bfgs_state = bfgs_state_candidate
-
-                accepted = TRUE
-
-                if(Verbose) print(c(delta2, rho))
-                break
-            }
-        }
-
-        if(!accepted){
-            if(Verbose) cat("No acceptable BFGS step; reset BFGS state.\n")
-            bfgs_state = NULL
-
-            # fallback: small steepest-ascent step
-            ss2 = grad_max
-            ss2 = ss2 / max(1, max(abs(ss2))) * 0.02
-
+        for(sign_dir in c(1, -1)){
             for(r in 0:20){
-                if(r<11){
-                    theta1 = theta + ss / 2^r
-                }else{
-                    theta1 = theta - ss / 2^(r-11)
-                }
+                theta1 = theta + sign_dir * ss / 2^r
 
                 theta1[1:P] =
                     pmin(pmax(theta1[1:P], log(delta_min)), log(delta_max))
@@ -283,12 +225,17 @@ gpreg1 = function(adata, rho_a=0.01, rho_b=5, Verbose=F, Plot=F, MAXITR=100){
                 rho1 = exp(theta1[P+1])
 
                 st1 = calc_state(delta21, rho1)
-                if(is.null(st1)) next
+
+                if(is.null(st1)){
+                    if(Verbose) cat("sign =", sign_dir, "r =", r, "candidate failed\n")
+                    next
+                }
 
                 lb1 = st1$lb
 
                 if(Verbose){
-                    cat("fallback r =", r,
+                    cat("sign =", sign_dir,
+                        "r =", r,
                         "| lb1 =", lb1,
                         "| diff =", lb1 - lball[1],
                         "| rho1 =", rho1, "\n")
@@ -311,15 +258,45 @@ gpreg1 = function(adata, rho_a=0.01, rho_b=5, Verbose=F, Plot=F, MAXITR=100){
                     titsias = st1$titsias
 
                     lball = c(lb1, lball)
+
+                    if(sign_dir == 1){
+                        bfgs_state = bfgs_state_candidate
+                    }else{
+                        bfgs_state = NULL
+                    }
+
                     accepted = TRUE
+                    fail_count = 0
+
+                    if(Verbose) print(c(delta2, rho))
                     break
                 }
             }
+            if(accepted) break
         }
 
         if(!accepted){
-            if(Verbose) cat("No acceptable step found at iteration", itr, "\n")
-            break
+            fail_count = fail_count + 1
+            bfgs_state = NULL
+            grad_norm = max(abs(grad_max))
+
+            if(Verbose){
+                cat("No acceptable step found at iteration", itr, "\n")
+                cat("max abs gradient =", grad_norm, "\n")
+                cat("fail_count =", fail_count, "\n")
+            }
+
+            if(grad_norm < 1e-4){
+                if(Verbose) cat("Treat as converged because gradient is small.\n")
+                break
+            }
+
+            if(fail_count >= 3){
+                if(Verbose) cat("Stopping because no acceptable step was found repeatedly.\n")
+                break
+            }
+
+            next
         }
     }
 
