@@ -1,4 +1,4 @@
-
+# improved step
 gpreg1 = function(adata, rho_a=0.01, rho_b=5, Verbose=F, Plot=F, MAXITR=100){
 
     rho_min=1e-3
