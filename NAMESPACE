@@ -1,0 +1,7 @@
+export(getData)
+export(gpreg1)
+export(gpreg2)
+export(prep_assoc)
+export(getDoseFromVCF)
+export(getP)
+export(getDynamicPGS)

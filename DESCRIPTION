@@ -1,0 +1,16 @@
+Package: DynamicPGS
+Maintainer: Natsuhiko Kumasaka <kumasaka@hgc.uk>
+Author: nak
+Version: 1.0
+License: GPL-3
+Title: Association mapping using Gaussina process regression model
+Description: Estimate and apply age- or time-varying polygenic scores using Gaussian process models. The package provides tools for modelling non-linear genetic effects across developmental or longitudinal trajectories, deriving dynamic SNP weights, and computing individual-level dynamic PGS at arbitrary time points.
+Collate:
+    'util.R'
+    'getData.R'
+    'gpreg1.R'
+    'gpreg2.R'
+    'getDoseFromVCF.R'
+    'prep_assoc.R'
+    'getP.R'
+    'getDynamicPGS.R'
