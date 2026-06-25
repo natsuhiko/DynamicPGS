@@ -58,15 +58,16 @@ gpreg2 = function(adata, delta2d0=c(0.94,1.7), Verbose=F, Plot=F, ncore=max(1, p
     Nd = length(table(iid))
     Nf = length(table(fid))
 
-    cat("Nd: "); cat(Nd); cat("\n")
-    cat("Nf: "); cat(Nf); cat("\n")
-    cat("N: "); cat(N); cat("\n")
-    cat("M: "); cat(M); cat("\n")
-
+    if(Verbose){
+        cat("Nd: "); cat(Nd); cat("\n")
+        cat("Nf: "); cat(Nf); cat("\n")
+        cat("N: "); cat(N); cat("\n")
+        cat("M: "); cat(M); cat("\n")
+    }
     delta2d = delta2d0
     P = length(nh)
     Q = ncol(X)
-    cat("Q: "); cat(Q); cat("\n")
+    if(Verbose){ cat("Q: "); cat(Q); cat("\n") }
 
     Knm = getK(x, ta, rho)
     Kmm = getK(ta, ta, rho)
@@ -204,7 +205,7 @@ gpreg2 = function(adata, delta2d0=c(0.94,1.7), Verbose=F, Plot=F, ncore=max(1, p
             lines(x0, y0, col=2, lwd=3)
         }
 
-        cat("iteration: "); cat(itr); cat(" | lower bound = "); cat(lball[1]); cat("\n")
+        if(Verbose){ cat("iteration: "); cat(itr); cat(" | lower bound = "); cat(lball[1]); cat("\n") }
 
         if(itr > 20 && length(lball) >= 10){
             if((lball[1] - lball[10]) / 10 < 1e-3){

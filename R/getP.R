@@ -1,16 +1,35 @@
-gchisq_p <- function(s, lambda, tol=0){
-    lambda <- lambda[is.finite(lambda)]
+gchisq_p <- function(s, lambda, tol=0, switch_p=1e-12){
+    lambda <- lambda[is.finite(lambda) & lambda > 0]
     if(length(lambda)==0 || !is.finite(s) || s < 0) return(NA_real_)
-    mx <- max(lambda)
-    lambda <- lambda[lambda > mx * tol]
+    mx <- max(lambda); lambda <- lambda[lambda > mx*tol]
     if(length(lambda)==0) return(NA_real_)
-    o <- CompQuadForm::davies(q=s, lambda=lambda, acc=1e-16, lim=50000)
+    spa <- function(q, l){
+        mu <- sum(l)
+        if(q <= mu) return(NA_real_)
+        K <- function(t) -0.5*sum(log1p(-2*t*l))
+        K1 <- function(t) sum(l/(1-2*t*l))
+        K2 <- function(t) 2*sum(l^2/(1-2*t*l)^2)
+        tmax <- (1/(2*max(l)))*(1-1e-12)
+        tt <- tryCatch(uniroot(function(t) K1(t)-q, c(0,tmax), tol=.Machine$double.eps^0.5)$root, error=function(e) NA_real_)
+        if(!is.finite(tt)) return(NA_real_)
+        r <- sqrt(2*(tt*q-K(tt))); v <- tt*sqrt(K2(tt))
+        if(!is.finite(r) || !is.finite(v) || r <= 0 || v <= 0) return(NA_real_)
+        a <- pnorm(-r, log.p=TRUE); b <- dnorm(r, log=TRUE)+log(abs(1/v-1/r)); sg <- sign(1/v-1/r)
+        logp <- if(sg > 0){m <- max(a,b); m+log(exp(a-m)+exp(b-m))} else {m <- max(a,b); z <- exp(a-m)-exp(b-m); if(z <= 0) return(exp(a)); m+log(z)}
+        exp(logp)
+    }
+    o <- CompQuadForm::davies(q=s, lambda=lambda, acc=1e-12, lim=50000)
     p <- o$Qq
-    if(!is.finite(p) || o$ifault != 0){
-        p <- CompQuadForm::imhof(q=s, lambda=lambda, epsabs=1e-16, epsrel=1e-16, limit=50000)$Qq
+    if(!is.finite(p) || p < 0 || p > 1 || o$ifault != 0){
+        p <- tryCatch(CompQuadForm::imhof(q=s, lambda=lambda, epsabs=1e-12, epsrel=1e-12, limit=50000)$Qq, error=function(e) NA_real_)
+    }
+    if(!is.finite(p) || p < switch_p){
+        p2 <- spa(s, lambda)
+        if(is.finite(p2)) p <- p2
     }
     pmin(pmax(p, .Machine$double.xmin), 1)
 }
+
 
 #' Dynamic association testing for genotype dosage matrix
 #'

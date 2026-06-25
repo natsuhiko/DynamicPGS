@@ -60,14 +60,15 @@ prep_assoc = function(adata, r_rho=1, r_delta2d=1, ncore=max(1, parallel::detect
     Nd = length(table(iid))
     Nf = length(table(fid))
 
-    cat("Nd: "); cat(Nd); cat("\n")
-    cat("Nf: "); cat(Nf); cat("\n")
-    cat("N: "); cat(N); cat("\n")
-    cat("M: "); cat(M); cat("\n")
-
+    if(Verbose){
+        cat("Nd: "); cat(Nd); cat("\n")
+        cat("Nf: "); cat(Nf); cat("\n")
+        cat("N: "); cat(N); cat("\n")
+        cat("M: "); cat(M); cat("\n")
+    }
     P = length(nh)
     Q = ncol(X)
-    cat("Q: "); cat(Q); cat("\n")
+    if(Verbose){ cat("Q: "); cat(Q); cat("\n") }
 
     Knm = getK(x, ta, rho)
     Kmm = getK(ta, ta, rho)
