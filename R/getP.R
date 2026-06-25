@@ -46,7 +46,6 @@ gchisq_p <- function(s, lambda, tol=0){
 #'
 #' @export
 getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, parallel::detectCores()-1)){
-    library(CompQuadForm)
     
     if(is.null(adata$PhiKdty)){
         stop("Step 2 optimization has not been performed yet...aborted")
