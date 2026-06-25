@@ -1,26 +1,25 @@
-getZd = function(did){
-    N = length(unique(did))
-    library(Matrix)
-    Z = drop0(Matrix(matrix(1:6,3)))
-    Z@x = as.double(rep(1,length(did)))
-    Z@i = as.integer(1:length(did)-1)
-    Z@p = as.integer(cumsum(c(0,as.numeric(table(did)))))
-    Z@Dim = as.integer(c(length(did),N))
-    Z
+getZd <- function(did){
+    did <- factor(did, levels=unique(did))
+    Matrix::sparseMatrix(
+        i = seq_along(did),
+        j = as.integer(did),
+        x = 1,
+        dims = c(length(did), nlevels(did))
+    )
 }
 
-getKnmd = function(Knm, did){
-    Knm = cbind(1, Knm)
-    M = ncol(Knm)
-    N = length(did)
-    Nd = length(unique(did))
-    library(Matrix)
-    Z = drop0(Matrix(matrix(1:6,3)))
-    Z@x = as.double(unlist(split(Knm, did)))
-    Z@i = as.integer(unlist(split(rep(seq(N)-1,M), did)))
-    Z@p = as.integer(cumsum( c(0,rep(as.numeric(table(did)),rep(M,Nd)) ) ))
-    Z@Dim = as.integer(c(length(did),Nd*M))
-    Z
+getKnmd <- function(Knm, did){
+    Knm <- cbind(1, Knm)
+    did <- factor(did, levels=unique(did))
+    n <- nrow(Knm)
+    M <- ncol(Knm)
+    Nd <- nlevels(did)
+    Matrix::sparseMatrix(
+        i = rep(seq_len(n), M),
+        j = as.integer(did) + rep(seq(0, by=Nd, length.out=M), each=n),
+        x = as.double(Knm),
+        dims = c(n, Nd*M)
+    )
 }
 
 
