@@ -1,60 +1,402 @@
 # DynamicPGS
 
-Computing dynamic polygenic scores across time using Gaussian process regression models
+DynamicPGS is an R package for modelling longitudinal phenotypes with Gaussian-process regression, performing dynamic genetic association testing, and computing dynamic polygenic scores (dynamic PGS) over a continuous index such as age or time.
 
-## 0. Installation
+The typical workflow is:
 
-You just need to download or clone the package where your genotype data (in plink2 PGEN format) is visible:
+```r
+getData() -> gpreg1() -> gpreg2() -> getP() -> getDynamicPGS()
 ```
-git clone https://github.com/natsuhiko/DynamicPGS.git
+
+## Installation
+
+Install the package from a local source directory:
+
+```bash
 R CMD INSTALL DynamicPGS
 ```
-## 1. Computing dynamic PGS using our model
 
-This is how we estimate PGS at child age $x^{*}$ (in month) using their genotype data (given by the plink2 PGEN format). To compute PGS at age of 0 to 54 months, you can simply run:
-```
-# you need to stay at the package home dir
-pgs = getDynamicPGS(xstar=0:54, pgen_dir="/path/to/your/pgen/dir/")
-```
-Here PGEN files must be named as
-```
-chr1.pgen chr2.pgen ... chr22.pgen chrX.pgen
-```
-It is also the case that no genotype data on X chromosome is available, the R code simply skips the missing chromosome(s) to compute PGS. 
+During development, use `devtools::load_all()` from the package root:
 
-The output object `pgs` contains 5 branches, `xstar`, `avg`, `E`, `SE` and `sigma2` (time points, the population average at the given time points, PGS, standard errors of PGS and residual variance estimate, respectively). The matrix `E` is the estimated PGS (time points x individuals). First, you might want to check PGS for the first 10 individuals as
-```
-matplot(pgs$xstar, pgs$E[,1:10], type="l")
-```
-If you are interested in the standard error of each individual's dynamic PGS, you can use `SE` (also time points x individuals matrix) to compute, such as
-```
-# 95%tile upper and lower bounts
-upper=pgs$E[,1] + pgs$SE[,1]*1.96
-lower=pgs$E[,1] - pgs$SE[,1]*1.96
-plot(pgs$xstar, pgs$E[,1], type="l")
-polygon(c(pgs$xstar, rev(pgs$xstar)), c(upper, rev(lower)), col=rgb(1,0,0,0.1), border=NA)
-```
-If you are interested in prediction, you can construct predicted values with prediction intervals as follows:
-```
-# 95%tile upper and lower bounts
-upper=pgs$avg + pgs$E[,1] + sqrt(pgs$sigma2 + pgs$SE[,1]^2)*1.96
-lower=pgs$avg + pgs$E[,1] - sqrt(pgs$sigma2 + pgs$SE[,1]^2)*1.96
-plot(pgs$xstar, pgs$avg+pgs$E[,1], type="l")
-polygon(c(pgs$xstar, rev(pgs$xstar)), c(upper, rev(lower)), col=rgb(1,0,0,0.1), border=NA)
+```r
+devtools::load_all()
 ```
 
-Note that `xstar` accepts any number, including decimal values (`xstar=11:19/10` for 1.1 to 1.9 months old), and can predict PGS outside of the constructed GP model (which is the age raging from 0 to 54 months, although not recommended).
+Do not source individual files such as `source("R/getData.R")` during package development, because this may create conflicts between objects in the global environment and functions loaded from the package.
 
-<!--
-## 2. Constructing population average model (optional)
+## Package structure
 
-We provide a population average model of BMI along child age. If you think your target population is different to the Japanese population, you can create your own model to provide an average of the target trait in your population over time. 
+Recommended source-tree structure:
 
-$y=(y_1^\top,\ldots,y_N^\top)^\top$ where $y_{i}=(y_{i1},\ldots,y_{i,n_i})^\top$
-
-$x=(x_1^\top,\ldots,x_N^\top)^\top$ where $x_{i}=(x_{i1},\ldots,x_{i,n_i})^\top$
-
+```text
+DynamicPGS/
+├── DESCRIPTION
+├── NAMESPACE
+├── R/
+│   ├── class.R
+│   ├── data.R
+│   ├── gpreg1.R
+│   ├── gpreg2.R
+│   ├── prep_assoc.R
+│   ├── getP.R
+│   ├── getDynamicPGS.R
+│   ├── getDoseFromVCF.R
+│   └── util.R
+├── man/
+├── README.md
+└── tests/
+    └── testthat/
 ```
-avg = getAvg(y=y, x=x, id=id, X=X)
+
+Help files under `man/` should be generated from roxygen2 comments:
+
+```r
+devtools::document()
 ```
--->
+
+Then functions can be documented and called as:
+
+```r
+?getData
+?gpreg1
+?gpreg2
+?getP
+?getDynamicPGS
+?getDoseFromVCF
+```
+
+## Input data
+
+### Longitudinal phenotype data
+
+The phenotype table must contain at least the following columns:
+
+| Column | Description |
+|---|---|
+| `IID` | Individual ID |
+| `x` | Continuous index, for example age in months |
+| `y` | Phenotype value |
+
+Example:
+
+```text
+IID     x      y
+id001   6      16.2
+id001   12     18.4
+id002   6      15.8
+id002   18     20.1
+```
+
+### Covariates
+
+Covariates can be supplied as a separate data.frame or file. Numeric covariates are standardised internally. Character or factor covariates are expanded into dummy variables.
+
+The number of rows in the covariate table should match the number of rows in the phenotype table.
+
+### Relatedness information
+
+If a KING relatedness file is supplied, DynamicPGS uses the relatedness information to construct family blocks. The KING file should contain at least:
+
+| Column | Description |
+|---|---|
+| `ID1` | First individual ID |
+| `ID2` | Second individual ID |
+| `Kinship` | KING kinship estimate |
+
+If no KING file is supplied, all individuals are treated as unrelated.
+
+## Basic workflow
+
+### 1. Create a DynamicPGS object
+
+```r
+library(DynamicPGS)
+
+adata <- getData(
+  Data = "phenotype.tsv",
+  Covariates = "covariates.tsv",
+  king_file = "king.kin0",
+  inducing_points = seq(0, 60, by = 6)
+)
+```
+
+The returned object has class `DynamicPGS`.
+
+```r
+adata
+```
+
+This prints a short summary of the number of observations, number of individuals, maximum family size, support of the continuous index, and covariate structure.
+
+### 2. Fit the population-level GP model
+
+```r
+adata <- gpreg1(
+  adata,
+  rho_a = 0.01,
+  rho_b = 5,
+  Verbose = TRUE,
+  Plot = FALSE,
+  MAXITR = 100
+)
+```
+
+This step estimates the population-level smooth trajectory, covariate variance components, GP length-scale parameter, and residual variance.
+
+### 3. Fit individual-level dynamic deviation components
+
+```r
+adata <- gpreg2(
+  adata,
+  delta2d0 = c(0.94, 1.7),
+  ncore = 4,
+  Verbose = TRUE,
+  Plot = FALSE,
+  MAXITR = 100
+)
+```
+
+This step estimates individual-level dynamic deviation components. It also calls `prep_assoc()` internally to prepare matrices for association mapping.
+
+If needed, association-mapping quantities can be recomputed explicitly:
+
+```r
+adata <- prep_assoc(
+  adata,
+  r_rho = 1,
+  r_delta2d = 1,
+  ncore = 4
+)
+```
+
+## Genotype dosage input
+
+### From an indexed VCF
+
+DynamicPGS can read genotype dosages from a bgzip-compressed and tabix-indexed VCF file.
+
+```r
+Gall <- getDoseFromVCF(
+  vcf = "imputed.vcf.gz",
+  region = "chr1:100000-200000"
+)
+```
+
+The returned object is a dosage matrix:
+
+```r
+dim(Gall)
+head(rownames(Gall))
+head(colnames(Gall))
+```
+
+Rows are variants and columns are samples. Variant row names are constructed as:
+
+```text
+CHROM:POS:REF:ALT
+```
+
+Variant metadata are stored as an attribute:
+
+```r
+attr(Gall, "variant_info")
+```
+
+If the VCF contains a `DS` field, dosages are read from `DS`. If `DS` is absent, `GT` is converted to alternate-allele dosage.
+
+### Expected dosage matrix format
+
+Association testing expects a numeric matrix with variants in rows and individuals in columns:
+
+```text
+          id001  id002  id003
+variant1  0.02   1.01   2.00
+variant2  1.00   0.00   0.98
+```
+
+Column names should correspond to individuals in the fitted `DynamicPGS` object.
+
+## Dynamic association testing
+
+Run variant-level dynamic association testing:
+
+```r
+adata <- getP(
+  adata,
+  Gall = Gall,
+  delta2g = 0.01,
+  Beta = TRUE,
+  Sinv = TRUE,
+  ncore = 4
+)
+```
+
+The association p-values are stored in:
+
+```r
+head(adata$pval)
+```
+
+If `Beta = TRUE`, posterior dynamic effect estimates are stored in:
+
+```r
+adata$Beta
+```
+
+If `Sinv = TRUE`, inverse covariance matrices are stored in:
+
+```r
+adata$Sinv
+```
+
+`Beta = TRUE` and `Sinv = TRUE` are recommended if the next step is to compute dynamic PGS with uncertainty estimates.
+
+## Computing dynamic PGS
+
+After association testing, dynamic PGS can be evaluated at arbitrary values of the continuous index.
+
+For example, to compute dynamic PGS from 0 to 60 months:
+
+```r
+dpgs <- getDynamicPGS(
+  xstar = 0:60,
+  Gall = Gall,
+  adata = adata
+)
+```
+
+The output is a list with the following elements:
+
+| Element | Description |
+|---|---|
+| `xstar` | Target index values |
+| `avg` | Estimated population-average trajectory |
+| `E` | Dynamic PGS matrix, with rows corresponding to `xstar` and columns to samples |
+| `SE` | Approximate standard errors of dynamic PGS |
+| `sigma2` | Residual variance estimate |
+
+Plot dynamic PGS for the first 10 individuals:
+
+```r
+matplot(dpgs$xstar, dpgs$E[, 1:10], type = "l",
+        xlab = "x", ylab = "Dynamic PGS")
+```
+
+Plot a dynamic PGS with an approximate 95% interval:
+
+```r
+i <- 1
+upper <- dpgs$E[, i] + 1.96 * dpgs$SE[, i]
+lower <- dpgs$E[, i] - 1.96 * dpgs$SE[, i]
+
+plot(dpgs$xstar, dpgs$E[, i], type = "l",
+     xlab = "x", ylab = "Dynamic PGS")
+polygon(
+  c(dpgs$xstar, rev(dpgs$xstar)),
+  c(upper, rev(lower)),
+  col = rgb(1, 0, 0, 0.1),
+  border = NA
+)
+lines(dpgs$xstar, dpgs$E[, i])
+```
+
+Plot predicted phenotype values with an approximate prediction interval:
+
+```r
+i <- 1
+pred <- as.numeric(dpgs$avg + dpgs$E[, i])
+upper <- pred + 1.96 * sqrt(dpgs$sigma2 + dpgs$SE[, i]^2)
+lower <- pred - 1.96 * sqrt(dpgs$sigma2 + dpgs$SE[, i]^2)
+
+plot(dpgs$xstar, pred, type = "l",
+     xlab = "x", ylab = "Predicted phenotype")
+polygon(
+  c(dpgs$xstar, rev(dpgs$xstar)),
+  c(upper, rev(lower)),
+  col = rgb(1, 0, 0, 0.1),
+  border = NA
+)
+lines(dpgs$xstar, pred)
+```
+
+## Development notes
+
+### Updating documentation
+
+Add roxygen2 comments immediately above each exported function, then run:
+
+```r
+devtools::document()
+```
+
+This updates:
+
+```text
+NAMESPACE
+man/*.Rd
+```
+
+### Loading during development
+
+Use:
+
+```r
+devtools::load_all()
+```
+
+rather than sourcing files manually.
+
+If you accidentally sourced functions and see messages such as:
+
+```text
+getData masks DynamicPGS::getData()
+gpreg1 masks DynamicPGS::gpreg1()
+```
+
+remove the global objects:
+
+```r
+rm(list = c("getData", "gpreg1"))
+devtools::load_all()
+```
+
+or restart the R session and run `devtools::load_all()` again.
+
+### Checking the package
+
+Run:
+
+```r
+devtools::check()
+```
+
+Before submission or release, also check that all exported functions have examples and help pages.
+
+## Main exported functions
+
+| Function | Purpose |
+|---|---|
+| `getData()` | Create a `DynamicPGS` object from longitudinal phenotype, covariate, and relatedness data |
+| `gpreg1()` | Fit the population-level Gaussian-process regression model |
+| `gpreg2()` | Fit individual-level dynamic deviation components |
+| `prep_assoc()` | Prepare matrices for dynamic association mapping |
+| `getP()` | Perform dynamic association testing for genotype dosages |
+| `getDynamicPGS()` | Compute dynamic PGS over a continuous index |
+| `getDoseFromVCF()` | Extract genotype dosages from a tabix-indexed VCF |
+| `print.DynamicPGS()` | Print a summary of a `DynamicPGS` object |
+
+## Dependencies
+
+DynamicPGS currently uses the following R packages:
+
+```r
+Matrix
+CompQuadForm
+parallel
+```
+
+`tabix` is required when using `getDoseFromVCF()` with VCF files.
+
+## Citation
+
+Citation information will be added after manuscript or package release.
