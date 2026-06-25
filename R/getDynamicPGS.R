@@ -1,4 +1,40 @@
-
+#' Compute dynamic polygenic scores over a continuous index
+#'
+#' `getDynamicPGS()` computes dynamic polygenic scores at user-specified values
+#' of the continuous index, such as age or time. It combines genotype dosages
+#' with variant-level dynamic effect estimates obtained by [getP()].
+#'
+#' The genotype matrix should contain the variants used in `adata$Beta`. Missing
+#' variants are ignored, and the function reports how many index variants were
+#' found.
+#'
+#' @param xstar Numeric vector of target index values at which dynamic PGS should
+#'   be evaluated.
+#' @param Gall Numeric genotype dosage matrix with variants in rows and samples
+#'   in columns.
+#' @param af Optional named numeric vector of allele frequencies for variants in
+#'   `Gall`. If `NULL`, allele frequencies are estimated as row means divided by
+#'   two.
+#' @param adata A `DynamicPGS` object after [getP()] with `Beta`. If standard
+#'   errors are required, `Sinv` should also be present.
+#'
+#' @return A list with the following elements:
+#' \describe{
+#'   \item{xstar}{Target index values.}
+#'   \item{avg}{Estimated average trajectory at `xstar`.}
+#'   \item{E}{Dynamic PGS matrix evaluated at `xstar`. Rows correspond to
+#'     `xstar`; columns correspond to samples.}
+#'   \item{SE}{Approximate standard errors of dynamic PGS values.}
+#'   \item{sigma2}{Residual variance estimate from the fitted model.}
+#' }
+#'
+#' @examples
+#' \dontrun{
+#' dpgs <- getDynamicPGS(xstar = 0:60, Gall = Gall, adata = adata)
+#' matplot(dpgs$xstar, dpgs$E, type = "l")
+#' }
+#'
+#' @export
 getDynamicPGS = function(xstar=0:54, Gall, af=NULL, adata){
     
     if(is.null(af)){ af = rowMeans(Gall,na.rm=T)/2 }

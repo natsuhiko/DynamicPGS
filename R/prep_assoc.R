@@ -1,6 +1,33 @@
-################################
-# prep for association mapping #
-################################
+#' Prepare intermediate matrices for dynamic association mapping
+#'
+#' `prep_assoc()` computes and stores the linear algebra quantities required for
+#' variant-level dynamic association testing. It is usually called automatically
+#' by [gpreg2()], but can also be called explicitly when model parameters are
+#' modified or recalibrated.
+#'
+#' The function constructs GP basis matrices for genotype effects, handles
+#' family-block Cholesky factors, and stores quantities used repeatedly by
+#' [getP()] to avoid recomputing expensive matrix operations for each variant.
+#'
+#' @param adata A `DynamicPGS` object after [gpreg1()] and [gpreg2()], containing
+#'   `rho` and `delta2d`.
+#' @param r_rho Numeric multiplier applied to the GP length-scale used for
+#'   genotype effects.
+#' @param r_delta2d Numeric multiplier applied to the individual-level variance
+#'   components used in the genotype-effect model.
+#' @param ncore Integer. Number of CPU cores used for parallel computation.
+#'
+#' @return The input `DynamicPGS` object updated with association-mapping
+#'   intermediate quantities, including `G0`, `tX`, `D`, `KdtG0base`,
+#'   `CinvKdtG0base`, `CinvB`, `DinvBtCinv`, `PhiXty`, `PhiKdty`, `sigma2`,
+#'   `sigma0`, and individual mapping indices.
+#'
+#' @examples
+#' \dontrun{
+#' adata <- prep_assoc(adata, r_rho = 1, r_delta2d = 1, ncore = 4)
+#' }
+#'
+#' @export
 prep_assoc = function(adata, r_rho=1, r_delta2d=1, ncore=max(1, parallel::detectCores()-1)){
     
     if(is.null(adata$rho)){
@@ -25,7 +52,7 @@ prep_assoc = function(adata, r_rho=1, r_delta2d=1, ncore=max(1, parallel::detect
     if(sum(Lmat$IID == iid) != length(iid)){
         return("Lmat is inappropriate!")
     }else{
-        Lmat = as.matrix(Lmat[,-c(1:2)])
+        Lmat = as.matrix(Lmat[,-c(1:2),drop=F])
     }
 
     N = length(y)
@@ -109,8 +136,9 @@ prep_assoc = function(adata, r_rho=1, r_delta2d=1, ncore=max(1, parallel::detect
             C1invi
         )
     }
-
-    idx_list = split(seq_len(N), fid)
+    ufid = unique(fid)
+    fid_fac = factor(fid, levels=ufid)
+    idx_list = split(seq_len(N), fid_fac)
     CinvB = do.call("rbind", parallel::mclapply(idx_list, one_id_fun_map, mc.cores=ncore))
     A = XtX + diag(1/delta2[rep(1:P,nh)])
     B = CinvB[,1:(Q+M)]
@@ -139,7 +167,6 @@ prep_assoc = function(adata, r_rho=1, r_delta2d=1, ncore=max(1, parallel::detect
 
     adata$delta2 = delta2
     adata$delta2d = delta2d
-    adata$sigma2_d = sigma2
 
     adata$G0 = G0
     adata$tX = tX

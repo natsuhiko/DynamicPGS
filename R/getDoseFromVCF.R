@@ -1,3 +1,30 @@
+#' Read genotype dosages from an indexed VCF file
+#'
+#' `getDoseFromVCF()` extracts variants from a bgzip-compressed and tabix-indexed
+#' VCF file and returns a dosage matrix. If the VCF contains a `DS` field, dosage
+#' values are read from `DS`. Otherwise, genotypes in the `GT` field are converted
+#' to alternate-allele dosages.
+#'
+#' @param vcf Path to a bgzip-compressed VCF file indexed by tabix.
+#' @param region Character vector of genomic regions passed to tabix, for example
+#'   `"chr1:100000-200000"`. At least one region must be supplied.
+#' @param tabix Path or command name for the tabix executable.
+#' @param chunk_size Integer. Number of VCF lines read per chunk.
+#'
+#' @return A numeric dosage matrix with variants in rows and samples in columns.
+#'   Row names are constructed as `CHROM:POS:REF:ALT`. Variant metadata are stored
+#'   in the `"variant_info"` attribute.
+#'
+#' @examples
+#' \dontrun{
+#' Gall <- getDoseFromVCF(
+#'   vcf = "imputed.vcf.gz",
+#'   region = "chr1:100000-200000"
+#' )
+#' attr(Gall, "variant_info")
+#' }
+#'
+#' @export
 getDoseFromVCF <- function(vcf, region, tabix="tabix", chunk_size=1000){
   if(length(region)<1) stop("region must contain at least one region.")
   

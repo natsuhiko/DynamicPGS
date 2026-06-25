@@ -12,6 +12,39 @@ gchisq_p <- function(s, lambda, tol=0){
     pmin(pmax(p, .Machine$double.xmin), 1)
 }
 
+#' Dynamic association testing for genotype dosage matrix
+#'
+#' `getP()` performs dynamic association testing for each variant in a genotype
+#' dosage matrix. For each variant, genotype dosages are centred by allele
+#' frequency and tested against the dynamic GP basis using a mixture chi-square
+#' distribution.
+#'
+#' This function requires a `DynamicPGS` object after [gpreg2()] or
+#' [prep_assoc()]. Optionally, posterior effect estimates and inverse covariance
+#' matrices can be stored for downstream dynamic PGS calculation.
+#'
+#' @param adata A `DynamicPGS` object prepared by [gpreg2()] or [prep_assoc()].
+#' @param Gall Numeric genotype dosage matrix with variants in rows and
+#'   individuals in columns. Row names should be variant IDs. Columns should
+#'   correspond to the unique individuals in `adata`.
+#' @param delta2g Numeric prior variance parameter for variant effects.
+#' @param Beta Logical. If `TRUE`, stores posterior effect estimates for each
+#'   variant in `adata$Beta`.
+#' @param Sinv Logical. If `TRUE`, stores inverse covariance matrices for each
+#'   variant in `adata$Sinv`. This is required for standard errors in
+#'   [getDynamicPGS()].
+#' @param ncore Integer. Number of CPU cores used for parallel computation.
+#'
+#' @return The input `DynamicPGS` object updated with `pval`. If requested, also
+#'   contains `Beta` and `Sinv`.
+#'
+#' @examples
+#' \dontrun{
+#' adata <- getP(adata, Gall, Beta = TRUE, Sinv = TRUE, ncore = 8)
+#' head(adata$pval)
+#' }
+#'
+#' @export
 getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, parallel::detectCores()-1)){
     library(CompQuadForm)
     

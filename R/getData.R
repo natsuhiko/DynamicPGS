@@ -1,3 +1,15 @@
+#' Print a DynamicPGS object
+#'
+#' Prints a short summary of a `DynamicPGS` object, including the number of
+#' observations, number of individuals, maximum family size, support of the
+#' continuous index, and covariate structure.
+#'
+#' @param x A `DynamicPGS` object.
+#' @param ... Additional arguments, currently ignored.
+#'
+#' @return Invisibly returns `x`.
+#'
+#' @export
 print.DynamicPGS <- function(x, ...) {
   cat("DynamicPGS object\n")
   cat("Number of samples: ", x$N, "\n", sep="")
@@ -9,6 +21,47 @@ print.DynamicPGS <- function(x, ...) {
   invisible(x)
 }
 
+
+#' Prepare longitudinal phenotype data for DynamicPGS analysis
+#'
+#' `getData()` reads longitudinal phenotype data, optional covariates, and optional
+#' KING relatedness results, and constructs a `DynamicPGS` analysis object.
+#'
+#' The input phenotype table must contain at least three columns: `IID`, `x`, and
+#' `y`, where `IID` is the individual ID, `x` is the continuous index such as age
+#' or time, and `y` is the phenotype. Rows with missing `IID`, `x`, `y`, or
+#' covariates are removed. If a KING file is provided, closely related individuals
+#' are grouped into family blocks and an additive relationship matrix is converted
+#' into a block-wise Cholesky representation used in later mixed-model steps.
+#'
+#' @param Data A data.frame or path to a tab-delimited file containing at least
+#'   `IID`, `x`, and `y`.
+#' @param Covariates Optional data.frame or path to a covariate file. Numeric
+#'   covariates are standardised internally; character or factor covariates are
+#'   expanded into dummy variables.
+#' @param king_file Optional path to a KING pairwise relatedness result file.
+#'   The file is expected to contain columns `ID1`, `ID2`, and `Kinship`.
+#' @param inducing_points Optional numeric vector of inducing points on the `x`
+#'   axis. If `NULL`, approximately 11 equally spaced points between the minimum
+#'   and maximum observed `x` are used.
+#' @param forced Logical. If `TRUE`, suppresses interactive prompts about merging
+#'   adjacent numeric covariate groups.
+#'
+#' @return A list of class `DynamicPGS` containing cleaned phenotype data,
+#'   design matrices, inducing points, covariance initial values, individual and
+#'   family mappings, and relatedness information.
+#'
+#' @examples
+#' \dontrun{
+#' adata <- getData(
+#'   Data = "phenotype.tsv",
+#'   Covariates = "covariates.tsv",
+#'   king_file = "king.kin0",
+#'   inducing_points = seq(0, 60, by = 6)
+#' )
+#' }
+#'
+#' @export
 getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king_file=NULL, inducing_points=NULL, forced=F){
     
     if(is.data.frame(Data)){
