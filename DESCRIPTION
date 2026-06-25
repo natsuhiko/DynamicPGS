@@ -14,3 +14,10 @@ Collate:
     'prep_assoc.R'
     'getP.R'
     'getDynamicPGS.R'
+RoxygenNote: 7.3.2
+Imports:
+    Matrix,
+    CompQuadForm,
+    parallel
+Suggests:
+    testthat
