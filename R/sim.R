@@ -21,6 +21,7 @@ getMockData = function(adata, Nd=1000, ncore=max(1, parallel::detectCores()-1)){
     Kmm = getK(ta, ta, rho)
     R = chol(Kmm)
     tKnm = t(forwardsolve(t(R),t(Knm)))
+    adata2$delta2 = c(10,0.01,0.01,0.01,0.01)
     delta2d = adata$delta2d
     sigma2 = adata$sigma2
     
