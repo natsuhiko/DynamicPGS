@@ -17,7 +17,7 @@ getMockData = function(adata, Nd=1000, ncore=max(1, parallel::detectCores()-1)){
     ta = adata$ta
     rho = adata$rho
     beta0 = c(adata$PhiXty[1], 0.01, 0.01, 0.01, 0.01, tail(adata$PhiXty,M))
-    Knm = getK(x$x, ta, rho)
+    Knm = getK(adata2$x, ta, rho)
     Kmm = getK(ta, ta, rho)
     R = chol(Kmm)
     tKnm = t(forwardsolve(t(R),t(Knm)))
