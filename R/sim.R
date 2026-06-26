@@ -1,24 +1,56 @@
-getMockData = function(adata, Nd=1000){
+getMockData = function(adata, Nd=1000, ncore=max(1, parallel::detectCores()-1)){
     
     k = simulate_king(Nd)
     uiid = k$iid
     x = simulate_x_from_xlist(split(adata$x, adata$iid), Nd, iid=uiid)
-    N = nrow(x)
     
     pc = data.frame(pc1=rnorm(Nd),pc2=rnorm(Nd))[match(x$IID,uiid),]
     sex = c("F","M")[(runif(Nd)>0.5)+1][match(x$IID,uiid)]
     
+    x=cbind(x,y=rep(0,nrow(x)))
+    adata2 = getData(x, Cov=cbind(pc,sex), king=k$king, inducing_points=ta)
+    
+    iid = adata2$iid
+    fid = adata2$fid
+    N = adata2$N
     M = adata$M
     ta = adata$ta
     rho = adata$rho
-    beta0 = c(tail(adata$PhiXty,M), adata$PhiXty[1])
+    beta0 = c(adata$PhiXty[1], 0.01, 0.01, 0.01, 0.01, tail(adata$PhiXty,M))
     Knm = getK(x$x, ta, rho)
     Kmm = getK(ta, ta, rho)
     R = chol(Kmm)
-    tKnm = cbind(t(forwardsolve(t(R),t(Knm))),1)
+    tKnm = t(forwardsolve(t(R),t(Knm)))
+    delta2d = adata$delta2d
+    sigma2 = adata$sigma2
     
-    x=cbind(x,y=rep(0,N))
-    getData(x, Cov=cbind(pc,sex), king=k$king, inducing_points=ta)
+    Lmat = adata2$Lmat[match(iid, unique(iid)),]
+    if(sum(Lmat$IID == iid) != length(iid)){
+        return("Lmat is inappropriate!")
+    }else{
+        Lmat = as.matrix(Lmat[,-c(1:2)])
+    }
+    
+    ufid = unique(fid)
+    fid_fac = factor(fid, levels=ufid)
+    idx_list = split(seq_len(N), fid_fac)
+    one_id_fun = function(ii){
+        n1 = length(unique(iid[ii]))
+        tk = c1prior = NULL
+        for(j in 1:n1){
+            tk = cbind(tk, cbind(tKnm[ii,,drop=FALSE], 1) * Lmat[ii,j])
+            c1prior = c(c1prior, rep(delta2d, c(M,1)))
+        }
+        
+        c(tk%*%rnorm(n1*(M+1),0,sqrt(c1prior)))
+    }
+    tmp = try(
+        unlist(parallel::mclapply(idx_list, one_id_fun, mc.cores=ncore))
+    )
+    
+    adata2$y = cbind(adata2$X, tKnm)%*%beta0 + tmp + rnorm(N,0,sqrt(sigma2))
+    
+    adata2
 }
 
 simulate_king <- function(N=1000, max_3rd_degree_size=3, seed=1){
