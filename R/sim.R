@@ -8,7 +8,7 @@ getMockData = function(adata, Nd=1000, ncore=max(1, parallel::detectCores()-1)){
     sex = c("F","M")[(runif(Nd)>0.5)+1][match(x$IID,uiid)]
     
     x=cbind(x,y=rep(0,nrow(x)))
-    adata2 = getData(x, Cov=cbind(pc,sex), king=k$king, inducing_points=ta)
+    adata2 = getData(x, Cov=cbind(pc,sex), king=k$king, inducing_points=adata$ta)
     
     iid = adata2$iid
     fid = adata2$fid
