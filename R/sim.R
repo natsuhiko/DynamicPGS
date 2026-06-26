@@ -1,7 +1,7 @@
 getMockData = function(adata, Nd=1000){
     
     k = simulate_king(Nd)
-    uiid = sort(unique(c(k[,2],k[,4])))
+    uiid = k$iid
     x = simulate_x_from_xlist(split(adata$x, adata$iid), Nd, iid=uiid)
     N = nrow(x)
     
@@ -18,7 +18,7 @@ getMockData = function(adata, Nd=1000){
     tKnm = cbind(t(forwardsolve(t(R),t(Knm))),1)
     
     x=cbind(x,y=rep(NA,N))
-    getData(x, Cov=cbind(pc,sex), king=k, inducing_points=ta)
+    getData(x, Cov=cbind(pc,sex), king=k$king, inducing_points=ta)
 }
 
 simulate_king <- function(N=1000, max_3rd_degree_size=3, seed=1){
@@ -77,7 +77,7 @@ simulate_king <- function(N=1000, max_3rd_degree_size=3, seed=1){
     kin0 <- if(length(res)) do.call(rbind, res) else data.frame()
     kin0 <- kin0[kin0$Kinship >= 0.0442,,drop=FALSE]
     rownames(kin0) <- NULL
-    kin0
+    list(king=kin0, iid=iid)
 }
 
 simulate_x_from_xlist <- function(xlist, N=1000, iid=NULL, seed=1, jitter=0, round_digits=1){
