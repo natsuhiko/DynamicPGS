@@ -30,7 +30,7 @@
 #' }
 #'
 #' @export
-gpreg2 = function(adata, delta2d0=c(0.94,1.7), Verbose=F, Plot=F, ncore=max(1, parallel::detectCores()-1), MAXITR=100){
+gpreg2 = function(adata, delta2d0=c(1.,1.), Verbose=F, Plot=F, ncore=max(1, parallel::detectCores()-1), MAXITR=100){
     
     if(is.null(adata$rho)){
         stop("Step 1 optimization has not been performed yet...aborted")
