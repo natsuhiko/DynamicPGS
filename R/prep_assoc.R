@@ -28,7 +28,7 @@
 #' }
 #'
 #' @export
-prep_assoc = function(adata, r_rho=1, r_delta2d=1, ncore=max(1, parallel::detectCores()-1)){
+prep_assoc = function(adata, r_rho=1, r_delta2d=1, ncore=max(1, parallel::detectCores()-1), Verbose=F){
     
     if(is.null(adata$rho)){
         stop("Step 1 optimization has not been performed yet...aborted")
