@@ -39,7 +39,7 @@ print.DynamicPGS <- function(x, ...) {
 #' @param Covariates Optional data.frame or path to a covariate file. Numeric
 #'   covariates are standardised internally; character or factor covariates are
 #'   expanded into dummy variables.
-#' @param king_file Optional path to a KING pairwise relatedness result file.
+#' @param king A data.frame or an optional path to a KING pairwise relatedness result file.
 #'   The file is expected to contain columns `ID1`, `ID2`, and `Kinship`.
 #' @param inducing_points Optional numeric vector of inducing points on the `x`
 #'   axis. If `NULL`, approximately 11 equally spaced points between the minimum
@@ -56,13 +56,13 @@ print.DynamicPGS <- function(x, ...) {
 #' adata <- getData(
 #'   Data = "phenotype.tsv",
 #'   Covariates = "covariates.tsv",
-#'   king_file = "king.kin0",
+#'   king = "king.kin0",
 #'   inducing_points = seq(0, 60, by = 6)
 #' )
 #' }
 #'
 #' @export
-getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king_file=NULL, inducing_points=NULL, forced=F){
+getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king=NULL, inducing_points=NULL, forced=T){
     
     if(is.data.frame(Data)){
         body = Data
@@ -95,8 +95,8 @@ getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king_
     }
     
     # King
-    if(!is.null(king_file)){
-        kingres = make_arm(king_file,uid)
+    if(!is.null(king)){
+        kingres = make_arm(king,uid)
         lmatres = makeL(kingres$A, kingres$family_df)
         Lmat = cbind(lmatres[[2]][,1:2],lmatres[[1]])
         max_family_size = max(lmatres$max_family_size)
@@ -299,7 +299,7 @@ makeL <- function(
 
 
 make_arm <- function(
-    king_file,
+    king,
     given_ids,
     id1_col = "ID1",
     id2_col = "ID2",
@@ -315,12 +315,15 @@ make_arm <- function(
   #----------------------------
   # 1. Read KING result
   #----------------------------
-  king <- read.table(
-    king_file,
-    header = TRUE,
-    stringsAsFactors = FALSE,
-    check.names = FALSE
-  )
+  if(!is.data.frame(king)){
+      king <- read.table(
+        king,
+        header = TRUE,
+        stringsAsFactors = FALSE,
+        check.names = FALSE
+      )
+  }
+  
   
   required_cols <- c(id1_col, id2_col, kinship_col)
   if (!all(required_cols %in% colnames(king))) {
