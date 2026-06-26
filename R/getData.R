@@ -62,7 +62,7 @@ print.DynamicPGS <- function(x, ...) {
 #' }
 #'
 #' @export
-getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king=NULL, inducing_points=NULL, forced=T){
+getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king=NULL, inducing_points=NULL, forced=T, Verbose=F){
     
     if(is.data.frame(Data)){
         body = Data
@@ -120,10 +120,12 @@ getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king=
     fid = Lmat$FID[match(iid,Lmat$IID)]
     Nf = length(unique(fid))
     
+    if(Verbose){
     cat("Nd: ");cat(Nd);cat("\n")
     cat("Nf: ");cat(Nd);cat("\n")
     cat("N: ");cat(N);cat("\n")
     cat("M: ");cat(M);cat("\n")
+    }
     
     # covariates
     nh = 1
@@ -162,7 +164,7 @@ getData = function(Data="/path/to/your/data_body.tsv.gz", Covariates=NULL, king=
     }}
     P = length(nh)
     Q = ncol(X)
-    print(nh)
+    if(Verbose)print(nh)
     adata = list(y=y, x=x, ta=ta, X=X, nh=nh, iid=iid, fid=fid, P=P, Q=Q, N=N, M=M, Nf=Nf, Nd=Nd, iid0=iid0, mapf=match(seq(N0)[narm==0][ord], seq(N0)), mapb=match(seq(N0),seq(N0)[narm==0][ord]), delta2=delta2, Lmat=Lmat, max_family_size=max_family_size)
     class(adata)="DynamicPGS"
     adata
