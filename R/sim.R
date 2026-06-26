@@ -17,7 +17,7 @@ getMockData = function(adata, Nd=1000){
     R = chol(Kmm)
     tKnm = cbind(t(forwardsolve(t(R),t(Knm))),1)
     
-    x=cbind(x,y=rep(NA,N))
+    x=cbind(x,y=rep(0,N))
     getData(x, Cov=cbind(pc,sex), king=k$king, inducing_points=ta)
 }
 
