@@ -1,7 +1,8 @@
 getMockData = function(adata, Nd=1000){
-    uiid = paste("ID",1:Nd,sep="")
-    x = simulate_x_from_xlist(split(adata$x, adata$iid), Nd, iid=uiid)
+    
     k = simulate_king(Nd)
+    uiid = sort(unique(c(k[,2],k[,4])))
+    x = simulate_x_from_xlist(split(adata$x, adata$iid), Nd, iid=uiid)
     N = nrow(x)
     
     pc = data.frame(pc1=rnorm(Nd),pc2=rnorm(Nd))[match(x$IID,uiid),]
