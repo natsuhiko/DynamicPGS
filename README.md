@@ -24,47 +24,6 @@ devtools::load_all()
 
 Do not source individual files such as `source("R/getData.R")` during package development, because this may create conflicts between objects in the global environment and functions loaded from the package.
 
-## Package structure
-
-Recommended source-tree structure:
-
-```text
-DynamicPGS/
-├── DESCRIPTION
-├── NAMESPACE
-├── R/
-│   ├── class.R
-│   ├── data.R
-│   ├── gpreg1.R
-│   ├── gpreg2.R
-│   ├── prep_assoc.R
-│   ├── getP.R
-│   ├── getDynamicPGS.R
-│   ├── getDoseFromVCF.R
-│   └── util.R
-├── man/
-├── README.md
-└── tests/
-    └── testthat/
-```
-
-Help files under `man/` should be generated from roxygen2 comments:
-
-```r
-devtools::document()
-```
-
-Then functions can be documented and called as:
-
-```r
-?getData
-?gpreg1
-?gpreg2
-?getP
-?getDynamicPGS
-?getDoseFromVCF
-```
-
 ## Input data
 
 ### Longitudinal phenotype data
