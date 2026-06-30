@@ -1,145 +1,145 @@
-#' Read genotype dosages from an indexed VCF file
+#' Read genotype dosages from an indexed VCF/BCF file
 #'
-#' `getDoseFromVCF()` extracts variants from a bgzip-compressed and tabix-indexed
-#' VCF file and returns a dosage matrix. If the VCF contains a `DS` field, dosage
-#' values are read from `DS`. Otherwise, genotypes in the `GT` field are converted
-#' to alternate-allele dosages.
+#' `getDoseFromVCF()` extracts genotype dosages for selected variants from an
+#' indexed VCF or BCF file using `bcftools query`. Variants are specified as
+#' character strings in the form `CHR:POS:REF:ALT`. The function first extracts
+#' records overlapping the requested genomic positions and then keeps only records
+#' whose chromosome, position, reference allele, and alternate allele exactly match
+#' the requested variants.
 #'
-#' @param vcf Path to a bgzip-compressed VCF file indexed by tabix.
-#' @param region Character vector of genomic regions passed to tabix, for example
-#'   `"chr1:100000-200000"`. At least one region must be supplied.
-#' @param tabix Path or command name for the tabix executable.
-#' @param chunk_size Integer. Number of VCF lines read per chunk.
+#' The function currently reads dosage values from the `FORMAT/DS` field and
+#' returns a numeric dosage matrix with variants in rows and samples in columns.
+#'
+#' @param vcf Character scalar. Path to a bgzip-compressed and indexed VCF file
+#'   (`.vcf.gz`) or an indexed BCF file (`.bcf`).
+#' @param variants Character vector. Variants to extract, specified as
+#'   `CHR:POS:REF:ALT`, for example `"1:12345:A:G"` or `"chr1:12345:A:G"`.
+#' @param samples Optional character vector. Sample IDs to extract. If `NULL`,
+#'   all samples in the VCF/BCF are extracted.
+#' @param BCFTOOLS Character scalar. Path to the `bcftools` executable, or the
+#'   command name if `bcftools` is available in the system `PATH`.
+#' @param tmpdir Character scalar. Directory used to write temporary files such
+#'   as the BED file and optional sample list.
+#' @param nline Integer. Number of `bcftools query` output lines read from the
+#'   pipe at a time. Smaller values reduce peak memory usage, while larger values
+#'   may improve speed.
+#' @param progress Logical. If `TRUE`, print progress information while reading
+#'   and parsing records.
 #'
 #' @return A numeric dosage matrix with variants in rows and samples in columns.
-#'   Row names are constructed as `CHROM:POS:REF:ALT`. Variant metadata are stored
-#'   in the `"variant_info"` attribute.
+#'   Row names are the requested `CHR:POS:REF:ALT` variant IDs, and column names
+#'   are sample IDs. Variants not found in the VCF/BCF are returned as rows filled
+#'   with `NA`.
+#'
+#' @details
+#' This function requires `bcftools` and an index for the input VCF/BCF file.
+#' For `.vcf.gz` files, a tabix index such as `.tbi` or `.csi` is expected.
+#' For `.bcf` files, a `.csi` index is expected.
+#'
+#' The extraction is position-based at the `bcftools` step. Exact allele matching
+#' is performed afterwards in R using `CHR:POS:REF:ALT`.
 #'
 #' @examples
 #' \dontrun{
+#' variants <- c("chr1:12345:A:G", "chr1:67890:C:T")
+#' # not run
 #' Gall <- getDoseFromVCF(
 #'   vcf = "imputed.vcf.gz",
-#'   region = "chr1:100000-200000"
+#'   variants = variants,
+#'   BCFTOOLS = "bcftools",
+#'   nline = 20,
+#'   progress = TRUE
 #' )
-#' attr(Gall, "variant_info")
+#'
+#' dim(Gall)
+#' Gall[1:2, 1:5]
 #' }
 #'
 #' @export
-getDoseFromVCF <- function(vcf, region, tabix="tabix", chunk_size=1000){
-  if(length(region)<1) stop("region must contain at least one region.")
-  
-  cmd <- paste(c(shQuote(tabix), "-h", shQuote(vcf), shQuote(region)), collapse=" ")
-  con <- pipe(cmd, open="r")
-  on.exit(close(con))
-  
-  header <- NULL
-  sample_ids <- NULL
-  D_list <- list()
-  V_list <- list()
-  k <- 0L
-  
-  get_field <- function(x, idx){
-    y <- strsplit(x, ":", fixed=TRUE)
-    vapply(y, function(z){
-      if(length(z) < idx) NA_character_ else z[[idx]]
-    }, character(1))
-  }
-  
-  gt_to_dosage <- function(gt){
-    vapply(gt, function(g){
-      if(is.na(g) || g %in% c(".", "./.", ".|.", "")) return(NA_real_)
-      a <- strsplit(g, "[/|]")[[1]]
-      if(any(a==".")) return(NA_real_)
-      sum(as.integer(a) > 0)
-    }, numeric(1))
-  }
-  
-  process_chunk <- function(lines, header, sample_ids){
-    f <- strsplit(lines, "\t", fixed=TRUE)
-    n <- length(f)
-    ns <- length(sample_ids)
-    
-    chrom <- vapply(f, `[`, character(1), 1)
-    pos   <- vapply(f, `[`, character(1), 2)
-    id    <- vapply(f, `[`, character(1), 3)
-    ref   <- vapply(f, `[`, character(1), 4)
-    alt   <- vapply(f, `[`, character(1), 5)
-    qual  <- vapply(f, `[`, character(1), 6)
-    filt  <- vapply(f, `[`, character(1), 7)
-    info  <- vapply(f, `[`, character(1), 8)
-    fmt   <- vapply(f, `[`, character(1), 9)
-    
-    S <- matrix(
-      unlist(lapply(f, function(z) z[10:length(z)]), use.names=FALSE),
-      nrow=n, ncol=ns, byrow=TRUE
-    )
-    
-    D <- matrix(NA_real_, nrow=n, ncol=ns)
-    
-    fmt_groups <- split(seq_len(n), fmt)
-    
-    for(ii in fmt_groups){
-      ff <- strsplit(fmt[ii[1]], ":", fixed=TRUE)[[1]]
-      ds_idx <- match("DS", ff)
-      gt_idx <- match("GT", ff)
-      
-      x <- as.vector(t(S[ii,,drop=FALSE]))
-      
-      if(!is.na(ds_idx)){
-        val <- get_field(x, ds_idx)
-        val[val %in% c(".", "")] <- NA_character_
-        D[ii,] <- matrix(as.numeric(val), nrow=length(ii), byrow=TRUE)
-      } else if(!is.na(gt_idx)){
-        gt <- get_field(x, gt_idx)
-        D[ii,] <- matrix(gt_to_dosage(gt), nrow=length(ii), byrow=TRUE)
-      }
+getDoseFromVCF = function(vcf, variants, samples=NULL, BCFTOOLS="bcftools", tmpdir=tempdir(), nline=20, progress=TRUE){
+    variants = as.character(variants)
+    sp = strsplit(variants, ":", fixed=TRUE)
+    vdat = data.frame(CHR=sapply(sp, `[`, 1), POS=as.integer(sapply(sp, `[`, 2)), REF=sapply(sp, `[`, 3), ALT=sapply(sp, `[`, 4), stringsAsFactors=FALSE)
+
+    reg = unique(vdat[,c("CHR","POS")])
+    bed = tempfile(tmpdir=tmpdir, fileext=".bed")
+    write.table(data.frame(reg$CHR, reg$POS-1L, reg$POS), bed, sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
+
+    if(is.null(samples)){
+        sample_ids = system2(BCFTOOLS, c("query","-l",vcf), stdout=TRUE)
+        sarg = ""
+    }else{
+        sample_ids = as.character(samples)
+        sfile = tempfile(tmpdir=tmpdir)
+        writeLines(sample_ids, sfile)
+        sarg = paste("-S", shQuote(sfile))
     }
-    
-    rownames(D) <- paste(chrom, pos, ref, alt, sep=":")
-    colnames(D) <- sample_ids
-    
-    vinfo <- data.frame(
-      CHROM=chrom, POS=pos, ID=id, REF=ref, ALT=alt,
-      QUAL=qual, FILTER=filt, INFO=info,
-      stringsAsFactors=FALSE,
-      check.names=FALSE
-    )
-    
-    list(D=D, vinfo=vinfo)
-  }
-  
-  repeat{
-    z <- readLines(con, n=chunk_size, warn=FALSE)
-    if(length(z)==0) break
-    
-    if(is.null(header)){
-      h <- grep("^#CHROM", z)
-      if(length(h)>0){
-        header <- strsplit(z[h[1]], "\t", fixed=TRUE)[[1]]
-        sample_ids <- header[10:length(header)]
-      }
+
+    dose = matrix(NA_real_, nrow=length(variants), ncol=length(sample_ids), dimnames=list(variants, sample_ids))
+    idx = seq_along(variants)
+    names(idx) = variants
+
+    fmt = "%CHROM\\t%POS\\t%REF\\t%ALT[\\t%DS]\\n"
+    errfile = tempfile(tmpdir=tmpdir)
+    cmd = paste(shQuote(BCFTOOLS), "query -R", shQuote(bed), sarg, "-f", shQuote(fmt), shQuote(vcf), "2>", shQuote(errfile))
+
+    bar = function(x, n, width=30){
+        p = if(n <= 0) 1 else min(1, x/n)
+        k = floor(width*p)
+        paste0("[", paste(rep("=", k), collapse=""), paste(rep(" ", width-k), collapse=""), "]")
     }
-    
-    body <- z[!grepl("^#", z)]
-    if(length(body)==0) next
-    
-    if(is.null(header)) stop("VCF header line '#CHROM' was not found.")
-    
-    out <- process_chunk(body, header, sample_ids)
-    k <- k + 1L
-    D_list[[k]] <- out$D
-    V_list[[k]] <- out$vinfo
-  }
-  
-  if(k==0L) stop("No variants returned from tabix.")
-  
-  D <- do.call(rbind, D_list)
-  vinfo <- do.call(rbind, V_list)
-  
-  keep <- !duplicated(rownames(D))
-  D <- D[keep,,drop=FALSE]
-  vinfo <- vinfo[keep,,drop=FALSE]
-  
-  attr(D, "variant_info") <- vinfo
-  D
+    draw = function(nread, nparse, nhit){
+        if(!progress) return(invisible())
+        cat(sprintf("\rhit %s %d/%d | read lines %d | parsed lines %d",
+                    bar(nhit, length(variants)), nhit, length(variants), nread, nparse))
+        flush.console()
+    }
+
+    con = pipe(cmd, open="r")
+    closed = FALSE
+    on.exit({
+        if(!closed) try(close(con), silent=TRUE)
+        unlink(c(bed, errfile, if(exists("sfile")) sfile))
+    }, add=TRUE)
+
+    nread = 0L
+    nparse = 0L
+    nhit = 0L
+    seen = rep(FALSE, length(variants))
+    draw(0,0,0)
+
+    repeat{
+        lines = readLines(con, n=nline, warn=FALSE)
+        if(length(lines)==0) break
+
+        nread = nread + length(lines)
+        z = strsplit(lines, "\t", fixed=TRUE)
+
+        for(a in z){
+            vid = paste(a[1], a[2], a[3], a[4], sep=":")
+            i = unname(idx[vid])
+            if(!is.na(i)){
+                x = a[-(1:4)]
+                x[x=="."] = NA_character_
+                dose[i,] = as.numeric(x)
+                if(!seen[i]){
+                    seen[i] = TRUE
+                    nhit = nhit + 1L
+                }
+            }
+            nparse = nparse + 1L
+        }
+
+        draw(nread, nparse, nhit)
+    }
+
+    status = close(con)
+    closed = TRUE
+    if(progress) cat("\n")
+
+    err = readLines(errfile, warn=FALSE)
+    if(!is.null(status) && status != 0) stop(paste(c("bcftools query failed:", err), collapse="\n"))
+
+    cat(sprintf("Finished: read lines=%d, parsed lines=%d, matched variants=%d/%d\n", nread, nparse, nhit, length(variants)))
+    dose
 }
