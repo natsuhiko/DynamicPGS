@@ -42,7 +42,6 @@
 #' @examples
 #' \dontrun{
 #' variants <- c("chr1:12345:A:G", "chr1:67890:C:T")
-#' # not run
 #' Gall <- getDoseFromVCF(
 #'   vcf = "imputed.vcf.gz",
 #'   variants = variants,

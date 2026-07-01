@@ -148,3 +148,93 @@ getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, paralle
     }
     adata
 }
+
+
+
+
+
+
+#' Plot time-varying SNP effect sizes
+#'
+#' `plotEffectSize()` visualises the estimated dynamic effect size of a variant
+#' across the support of the time or age variable. The variant-specific effect is
+#' reconstructed from the Gaussian process basis and plotted with an approximate
+#' 95% confidence interval.
+#'
+#' @param adata A `DynamicPGS` object after association mapping. The object must
+#'   contain `Beta`, `Sinv`, `sigma2`, `ta`, `rho`, and related Gaussian process
+#'   components.
+#' @param variant Integer or character. Variant to plot. If an integer is supplied,
+#'   it is used as the row index of `adata$Beta`. If a character string is supplied,
+#'   it is matched against `rownames(adata$Beta)`.
+#' @param xstar Numeric vector. Points at which the effect size is evaluated. If
+#'   `NULL`, a sequence over `adata$support_x` is used.
+#' @param col Colour used for the effect-size curve and confidence band.
+#' @param add Logical. If `TRUE`, add the curve to an existing plot.
+#' @param ci Logical. If `TRUE`, draw an approximate 95% confidence interval.
+#' @param lwd Line width for the effect-size curve.
+#' @param main Main title of the plot. If `NULL`, the variant name or index is used.
+#' @param xlab Label for the x-axis.
+#' @param ylab Label for the y-axis.
+#'
+#' @return Invisibly returns a `data.frame` containing the evaluation points,
+#'   estimated effect sizes, and confidence interval limits.
+#'
+#' @details
+#' The dynamic effect size is computed as
+#' \deqn{G_0(x) \hat{\beta},}
+#' where `G0` is the Gaussian process basis evaluated at `xstar`, and
+#' `\hat{\beta}` is the variant-specific coefficient vector stored in
+#' `adata$Beta`. The uncertainty is approximated using the inverse precision
+#' matrix stored in `adata$Sinv` and scaled by `adata$sigma2`.
+#'
+#' @examples
+#' \dontrun{
+#' plotEffectSize(adata, variant=1)
+#' plotEffectSize(adata, variant="rs12345", col=2)
+#' plotEffectSize(adata, variant=1, xstar=seq(0, 60, by=1))
+#' }
+#'
+#' @export
+plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE, lwd=2, main=NULL, xlab="x", ylab="Effect size"){
+    if(is.null(xstar)) xstar <- Seq(adata$support_x)
+    ta <- adata$ta; rho <- adata$rho; M <- adata$M; Sinv <- adata$Sinv; B <- adata$Beta; sigma2 <- adata$sigma2
+    
+    if(is.null(B)){stop("No effect size estimate. Use getP(...,Beta=T,Sinv=T).")}
+
+    if(is.character(variant)) variant <- match(variant, rownames(B))
+    if(length(variant) != 1 || is.na(variant)) stop("variant must be a valid row index or row name of adata$Beta.")
+    if(is.null(main)) main <- if(!is.null(rownames(B))) rownames(B)[variant] else paste0("variant ", variant)
+
+    Knm <- getK(xstar, ta, rho)
+    Kmm <- getK(ta, ta, rho)
+    R <- chol(Kmm)
+    tKnm <- t(forwardsolve(t(R), t(Knm)))
+    G0 <- cbind(tKnm, 1)
+
+    b <- B[variant,]
+    S <- matrix(Sinv[variant,], M+1, M+1)
+    S <- (S + t(S)) / 2
+
+    m <- as.numeric(G0 %*% b)
+    V <- try(solve(S, t(G0)), silent=TRUE)
+    if(inherits(V, "try-error")) V <- SolveJitter(S, t(G0))
+    v <- sigma2 * colSums(V * t(G0))
+    v <- pmax(v, 0)
+
+    upper <- m + 1.96 * sqrt(v)
+    lower <- m - 1.96 * sqrt(v)
+
+    if(!add){
+        ylim <- if(ci) range(c(lower, upper), na.rm=TRUE) else range(m, na.rm=TRUE)
+        plot(xstar, m, type="n", ylim=ylim, main=main, xlab=xlab, ylab=ylab, axes=FALSE)
+        axis(2, las=2)
+        axis(1)
+        box()
+        abline(h=0, lty=2)
+    }
+
+    if(ci) polygon(c(xstar, rev(xstar)), c(upper, rev(lower)), col=Alpha(col), border=NA)
+    lines(xstar, m, col=col, lwd=lwd)
+    invisible(data.frame(x=xstar, beta=m, lower=lower, upper=upper))
+}
