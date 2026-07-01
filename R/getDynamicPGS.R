@@ -50,10 +50,10 @@ getDynamicPGS = function(xstar=0:54, Gall, af=NULL, adata){
     
     com = intersect(rownames(Gall),rownames(B))
     af = af[match(com,rownames(Gall))]
-    B = B[com,]
-    Gall = Gall[com,]
+    B = B[com,,drop=F]
+    Gall = Gall[com,,drop=F]
     L = nrow(B)
-    cat(paste(nrow(Gall)," variants out of ",L0," index variants were found...\n",sep=""))
+    cat(paste(nrow(Gall)," variants out of ",L0," proxy variants were found...\n",sep=""))
     
     Knm = getK(xstar, ta, rho)
     Kmm = getK(ta, ta, rho)
@@ -70,4 +70,36 @@ getDynamicPGS = function(xstar=0:54, Gall, af=NULL, adata){
         V=V+sigma2*colSums(solve(matrix(Sinv[l,],M+1),t(G0))*t(G0))%*%t(gl^2)
     }
     list(xstar=xstar, avg=G0%*%beta0, E=E, SE=sqrt(V), sigma2=sigma2)
+}
+
+
+#' Make a public DynamicPGS object
+#'
+#' Remove individual-level data from a DynamicPGS object and retain only model-level
+#' parameters required for public use.
+#'
+#' @param adata A DynamicPGS object.
+#'
+#' @return A DynamicPGS_public object containing only `ta`, `rho`, `M`, `Sinv`,
+#'   `Beta`, `sigma2`, and `PhiXty`.
+#' @export
+makePublicData = function(adata){
+    keep0 = c("ta","rho","M","Sinv","Beta","sigma2","PhiXty","proxy")
+    keep = intersect(keep0, names(adata))
+    out = adata[keep]
+    missing = setdiff(keep0, names(adata))
+    if(length(missing)>0) warning("Missing fields: ", paste(missing, collapse=", "))
+    class(out) = c("PublicDynamicPGS", "DynamicPGS")
+    out
+}
+
+print.PublicDynamicPGS = function(x, ...){
+    cat("Public DynamicPGS object\n")
+    if(!is.null(x$M)) cat("Number of inducing points: ", x$M, "\n", sep="")
+    if(!is.null(x$rho)) cat("rho: ", x$rho, "\n", sep="")
+    if(!is.null(x$ta)) cat("Support: ", min(x$ta), " to ", max(x$ta), "\n", sep="")
+    if(!is.null(x$sigma2)) cat("sigma2: ", x$sigma2, "\n", sep="")
+    if(!is.null(x$proxy)) cat("N lead vars: ", length(unique(x$proxy$lead)), "\n", sep="")
+    if(!is.null(x$proxy)) cat("N proxy vars: ", length(unique(x$proxy$proxy)), "\n", sep="")
+    invisible(x)
 }
