@@ -1,6 +1,6 @@
 #' Prepare intermediate matrices for dynamic association mapping
 #'
-#' `prep_assoc()` computes and stores the linear algebra quantities required for
+#' `prepAssoc()` computes and stores the linear algebra quantities required for
 #' variant-level dynamic association testing. It is usually called automatically
 #' by [gpreg2()], but can also be called explicitly when model parameters are
 #' modified or recalibrated.
@@ -24,11 +24,11 @@
 #'
 #' @examples
 #' \dontrun{
-#' adata <- prep_assoc(adata, r_rho = 1, r_delta2d = 1, ncore = 4)
+#' adata <- prepAssoc(adata, r_rho = 1, r_delta2d = 1, ncore = 4)
 #' }
 #'
 #' @export
-prep_assoc = function(adata, r_rho=1, r_delta2d=1, ncore=max(1, parallel::detectCores()-1), Verbose=F){
+prepSssoc = function(adata, r_rho=1, r_delta2d=1, ncore=max(1, parallel::detectCores()-1), Verbose=F){
     
     if(is.null(adata$rho)){
         stop("Step 1 optimization has not been performed yet...aborted")

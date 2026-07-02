@@ -1,12 +1,12 @@
 #' Step 1 optimisation of the population-level Gaussian-process regression model
 #'
-#' `gpreg1()` fits the first-stage Gaussian-process regression model for the
+#' `GPReg1()` fits the first-stage Gaussian-process regression model for the
 #' longitudinal phenotype. This step estimates the population-level smooth
 #' trajectory, covariate variance components, the GP length-scale parameter
 #' `rho`, and the residual variance.
 #'
 #' This function should be run after [getData()]. The fitted object is required
-#' by [gpreg2()] and downstream association testing.
+#' by [GPReg2()] and downstream association testing.
 #'
 #' @param adata A `DynamicPGS` object returned by [getData()].
 #' @param rho_a Shape-like hyperparameter for the inverse-gamma prior on `rho`.
@@ -24,11 +24,11 @@
 #' @examples
 #' \dontrun{
 #' adata <- getData("phenotype.tsv")
-#' adata <- gpreg1(adata, Verbose = TRUE)
+#' adata <- GPReg1(adata, Verbose = TRUE)
 #' }
 #'
 #' @export
-gpreg1 = function(adata, rho_a=0.01, rho_b=5, Verbose=F, Plot=F, MAXITR=100){
+GPReg1 = function(adata, rho_a=0.01, rho_b=5, Verbose=F, Plot=F, MAXITR=100){
 
     rho_min=1e-3
     rho_max=3000

@@ -162,7 +162,7 @@ getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, paralle
 #' 95% confidence interval.
 #'
 #' @param adata A `DynamicPGS` object after association mapping. The object must
-#'   contain `Beta`, `Sinv`, `sigma2`, `ta`, `rho`, and related Gaussian process
+#'   contain `Beta`, `Sinv`, `ta`, `rho`, and related Gaussian process
 #'   components.
 #' @param variant Integer or character. Variant to plot. If an integer is supplied,
 #'   it is used as the row index of `adata$Beta`. If a character string is supplied,
@@ -186,7 +186,7 @@ getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, paralle
 #' where `G0` is the Gaussian process basis evaluated at `xstar`, and
 #' `\hat{\beta}` is the variant-specific coefficient vector stored in
 #' `adata$Beta`. The uncertainty is approximated using the inverse precision
-#' matrix stored in `adata$Sinv` and scaled by `adata$sigma2`.
+#' matrix stored in `adata$Sinv`.
 #'
 #' @examples
 #' \dontrun{
@@ -196,9 +196,10 @@ getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, paralle
 #' }
 #'
 #' @export
-plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE, lwd=2, main=NULL, xlab="x", ylab="Effect size"){
+plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE, lwd=2, main=NULL, xlab="x", ylab="Effect size", ...){
+    
     if(is.null(xstar)) xstar <- Seq(adata$support_x)
-    ta <- adata$ta; rho <- adata$rho*adata$r_rho; M <- adata$M; Sinv <- adata$Sinv; B <- adata$Beta; sigma2 <- adata$sigma2
+    ta <- adata$ta; rho <- adata$rho*adata$r_rho; M <- adata$M; Sinv <- adata$Sinv; B <- adata$Beta
     
     if(is.null(B)){stop("No effect size estimate. Use getP(...,Beta=T,Sinv=T).")}
 
@@ -219,7 +220,7 @@ plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE
     m <- as.numeric(G0 %*% b)
     V <- try(solve(S, t(G0)), silent=TRUE)
     if(inherits(V, "try-error")) V <- SolveJitter(S, t(G0))
-    v <- sigma2 * colSums(V * t(G0))
+    v <- colSums(V * t(G0))
     v <- pmax(v, 0)
 
     upper <- m + 1.96 * sqrt(v)
@@ -227,7 +228,7 @@ plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE
 
     if(!add){
         ylim <- if(ci) range(c(lower, upper), na.rm=TRUE) else range(m, na.rm=TRUE)
-        plot(xstar, m, type="n", ylim=ylim, main=main, xlab=xlab, ylab=ylab, axes=FALSE)
+        plot(xstar, m, type="n", ylim=ylim, main=main, xlab=xlab, ylab=ylab, axes=FALSE, ...)
         axis(2, las=2)
         axis(1)
         box()

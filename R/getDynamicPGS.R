@@ -49,7 +49,6 @@ getDynamicPGS = function(adata, Gall, xstar=NULL, af=NULL){
     Sinv = adata$Sinv
     B = adata$Beta
     L0 = nrow(B)
-    sigma2 = adata$sigma2
     beta0 = c(tail(adata$PhiXty,M), adata$PhiXty[1])
     
     com = intersect(rownames(Gall),rownames(B))
@@ -71,7 +70,7 @@ getDynamicPGS = function(adata, Gall, xstar=NULL, af=NULL){
         gl <- Gall[l,]
         gl = gl - af[l]*2
         E=E+G0%*%B[l,]%*%t(gl)
-        V=V+sigma2*colSums(solve(matrix(Sinv[l,],M+1),t(G0))*t(G0))%*%t(gl^2)
+        V=V+colSums(solve(matrix(Sinv[l,],M+1),t(G0))*t(G0))%*%t(gl^2)
     }
     adata$xstar=xstar
     adata$pop_avg_xstar=G0%*%beta0
