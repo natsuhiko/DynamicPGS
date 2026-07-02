@@ -198,7 +198,7 @@ getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, paralle
 #' @export
 plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE, lwd=2, main=NULL, xlab="x", ylab="Effect size"){
     if(is.null(xstar)) xstar <- Seq(adata$support_x)
-    ta <- adata$ta; rho <- adata$rho; M <- adata$M; Sinv <- adata$Sinv; B <- adata$Beta; sigma2 <- adata$sigma2
+    ta <- adata$ta; rho <- adata$rho*adata$r_rho; M <- adata$M; Sinv <- adata$Sinv; B <- adata$Beta; sigma2 <- adata$sigma2
     
     if(is.null(B)){stop("No effect size estimate. Use getP(...,Beta=T,Sinv=T).")}
 

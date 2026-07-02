@@ -44,7 +44,7 @@ getDynamicPGS = function(adata, Gall, xstar=NULL, af=NULL){
     if(is.null(xstar)){ xstar = Seq(adata$support_x)}
     
     ta = adata$ta
-    rho = adata$rho
+    rho = adata$rho*adata$r_rho
     M = adata$M
     Sinv = adata$Sinv
     B = adata$Beta
@@ -97,8 +97,7 @@ getDynamicPGS = function(adata, Gall, xstar=NULL, af=NULL){
 #'
 #' @export
 #' @method plot DynamicPGS
-plot.DynamicPGS <- function(x, i=NULL, Prediction=FALSE, col=1, add=FALSE,
-                            xlab="x", ylab=NULL, lwd=2, ci=TRUE, ...) {
+plot.DynamicPGS <- function(x, i=NULL, Prediction=FALSE, col=1, add=FALSE, xlab="x", ylab=NULL, lwd=2, ci=TRUE, ...) {
     if(is.null(x$xstar)) stop("x$xstar is missing.")
     if(is.null(x$PGS)) stop("x$PGS is missing.")
     if(is.null(x$PGS_SE)) stop("x$PGS_SE is missing.")
@@ -133,7 +132,7 @@ plot.DynamicPGS <- function(x, i=NULL, Prediction=FALSE, col=1, add=FALSE,
 }
 
 
-#' Make a public DynamicPGS object
+#' Get a public DynamicPGS object
 #'
 #' Remove individual-level data from a DynamicPGS object and retain only model-level
 #' parameters required for public use.
@@ -143,8 +142,8 @@ plot.DynamicPGS <- function(x, i=NULL, Prediction=FALSE, col=1, add=FALSE,
 #' @return A DynamicPGS_public object containing only `ta`, `rho`, `M`, `Sinv`,
 #'   `Beta`, `sigma2`, and `PhiXty`.
 #' @export
-makePublicData = function(adata){
-    keep0 = c("ta","rho","M","Sinv","Beta","sigma2","PhiXty","proxy","support_x")
+getPublicData = function(adata){
+    keep0 = c("ta","rho","M","Sinv","Beta","sigma2","PhiXty","proxy","support_x","r_rho")
     keep = intersect(keep0, names(adata))
     out = adata[keep]
     missing = setdiff(keep0, names(adata))

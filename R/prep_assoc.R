@@ -183,6 +183,8 @@ prep_assoc = function(adata, r_rho=1, r_delta2d=1, ncore=max(1, parallel::detect
     adata$sigma2 = sigma2
     adata$sigma0 = sigma0
     adata$Phii = Phii
+    adata$r_rho = r_rho
+    adata$r_delta2d = r_delta2d
 
     adata
 }
