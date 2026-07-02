@@ -125,23 +125,25 @@ getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, paralle
             Dg = diag(M+1)/delta2g + GVinvG
             bg = Solve(Dg, t(ytVinvG))
             if(Sinv){
-                return(c(p1, bg, c(Dg)))
+                return(c(p1, af, bg, c(Dg)))
             }else{
-                return(c(p1, bg))
+                return(c(p1, af, bg))
             }
         }else{
-            return(p1)
+            return(c(p1, af))
         }
     }, mc.cores=ncore))
     
     adata$pval = pval[,1]
+    adata$allele_frequency = pval[,2]
     names(adata$pval) = rownames(Gall)
+    names(adata$allele_frequency) = rownames(Gall)
     if(Beta|Sinv){
-        beta = pval[,2:(M+2),drop=F]
+        beta = pval[,3:(M+3),drop=F]
         rownames(beta) = rownames(Gall)
         adata$Beta = beta
         if(Sinv){
-            sinv = pval[,(M+3):(M+2+(M+1)^2),drop=F]
+            sinv = pval[,(M+4):(M+3+(M+1)^2),drop=F]
             rownames(sinv) = rownames(Gall)
             adata$Sinv = sinv/sigma2
         }
@@ -196,10 +198,17 @@ getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, paralle
 #' }
 #'
 #' @export
-plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE, lwd=2, main=NULL, xlab="x", ylab="Effect size", ...){
+plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE, lwd=2, main=NULL, xlab="x", ylab="Effect size", genoEffect=F, ...){
+    
+    col.geno = c("#19324B", "#32C8E9", "#F51A57")
+    if(genoEffect){ci=F}
     
     if(is.null(xstar)) xstar <- Seq(adata$support_x)
-    ta <- adata$ta; rho <- adata$rho*adata$r_rho; M <- adata$M; Sinv <- adata$Sinv; B <- adata$Beta
+    ta <- adata$ta
+    rho <- adata$rho*adata$r_rho
+    M <- adata$M
+    Sinv <- adata$Sinv
+    B <- adata$Beta
     
     if(is.null(B)){stop("No effect size estimate. Use getP(...,Beta=T,Sinv=T).")}
 
@@ -207,12 +216,24 @@ plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE
     if(length(variant) != 1 || is.na(variant)) stop("variant must be a valid row index or row name of adata$Beta.")
     if(is.null(main)) main <- if(!is.null(rownames(B))) rownames(B)[variant] else paste0("variant ", variant)
 
+    popavg = 0
+    if(genoEffect){
+        beta0 = c(tail(adata$PhiXty,M), adata$PhiXty[1])
+        Knm <- getK(xstar, ta, adata$rho)
+        Kmm <- getK(ta, ta, adata$rho)
+        R <- chol(Kmm)
+        tKnm <- t(forwardsolve(t(R), t(Knm)))
+        G00 <- cbind(tKnm, 1)
+        popavg = c(G00%*%beta0)
+    }
+    
     Knm <- getK(xstar, ta, rho)
     Kmm <- getK(ta, ta, rho)
     R <- chol(Kmm)
     tKnm <- t(forwardsolve(t(R), t(Knm)))
     G0 <- cbind(tKnm, 1)
 
+    af = adata$allele_frequency[variant]
     b <- B[variant,]
     S <- matrix(Sinv[variant,], M+1, M+1)
     S <- (S + t(S)) / 2
@@ -227,7 +248,7 @@ plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE
     lower <- m - 1.96 * sqrt(v)
 
     if(!add){
-        ylim <- if(ci) range(c(lower, upper), na.rm=TRUE) else range(m, na.rm=TRUE)
+        ylim <- if(ci) range(c(lower, upper), na.rm=TRUE) else range(m+popavg, na.rm=TRUE)
         plot(xstar, m, type="n", ylim=ylim, main=main, xlab=xlab, ylab=ylab, axes=FALSE, ...)
         axis(2, las=2)
         axis(1)
@@ -235,7 +256,13 @@ plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE
         abline(h=0, lty=2)
     }
 
-    if(ci) polygon(c(xstar, rev(xstar)), c(upper, rev(lower)), col=Alpha(col), border=NA)
-    lines(xstar, m, col=col, lwd=lwd)
+    if(genoEffect){
+        lines(xstar, popavg + (0-af*2)*m, col=col.geno[1], lwd=lwd)
+        lines(xstar, popavg + (1-af*2)*m, col=col.geno[2], lwd=lwd)
+        lines(xstar, popavg + (2-af*2)*m, col=col.geno[3], lwd=lwd)
+    }else{
+        if(ci) polygon(c(xstar, rev(xstar)), c(upper, rev(lower)), col=Alpha(col), border=NA)
+        lines(xstar, m, col=col, lwd=lwd)
+    }
     invisible(data.frame(x=xstar, beta=m, lower=lower, upper=upper))
 }

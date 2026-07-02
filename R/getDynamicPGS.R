@@ -58,6 +58,12 @@ getDynamicPGS = function(adata, Gall, xstar=NULL, af=NULL){
     L = nrow(B)
     cat(paste(nrow(Gall)," variants out of ",L0," proxy variants were found...\n",sep=""))
     
+    Knm = getK(xstar, ta, adata$rho)
+    Kmm = getK(ta, ta, adata$rho)
+    R = chol(Kmm)
+    tKnm = t(forwardsolve(t(R),t(Knm)))
+    G00 = cbind(tKnm, 1)
+    
     Knm = getK(xstar, ta, rho)
     Kmm = getK(ta, ta, rho)
     R = chol(Kmm)
@@ -73,7 +79,7 @@ getDynamicPGS = function(adata, Gall, xstar=NULL, af=NULL){
         V=V+colSums(solve(matrix(Sinv[l,],M+1),t(G0))*t(G0))%*%t(gl^2)
     }
     adata$xstar=xstar
-    adata$pop_avg_xstar=G0%*%beta0
+    adata$pop_avg_xstar=G00%*%beta0
     adata$PGS=E
     adata$PGS_SE=sqrt(V)
     
