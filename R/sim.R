@@ -55,6 +55,9 @@ getMockData = function(adata, Nd=1000, ncore=max(1, parallel::detectCores()-1)){
         G=simGenoFromLmat(adata2$Lmat,adata$allele_frequency)
         Gstar = G-adata$allele_frequency*2
         adata2$G1 = G
+        print(dim(Gstar))
+        print(dim(tKnm))
+        print(dim(adata$Beta))
         for(l in seq(nrow(adata$Beta))){
             pgs = pgs + c(cbind(tKnm, 1)%*%adata$Beta[l,])*Gstar[l,]
         }
