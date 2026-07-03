@@ -113,7 +113,7 @@ adata_with_your_pgs <- getDynamicPGS(
 
 In this case, `names(af_vector_with_var_id)` must match the variant IDs used by the model, such as `CHR:POS:REF:ALT`.
 
-## Input data
+## Fitting the GP regression model to your own data 
 
 ### Longitudinal phenotype data
 
