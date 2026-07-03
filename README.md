@@ -11,16 +11,98 @@ The typical workflow is:
 Install the package from a local source directory:
 
 ```bash
+git clone https://github.com/natsuhiko/DynamicPGS.git
 R CMD INSTALL DynamicPGS
 ```
 
-During development, use `devtools::load_all()` from the package root:
+Do not source individual files such as `source("R/getData.R")` during package development, because this may create conflicts between objects in the global environment and functions loaded from the package.
+
+## Quick start: dynamic PGS calculation using the published BMI model
+
+This section shows how to compute dynamic PGS using the pre-trained BMI model included in this package.
+
+### 1. Extract genotype dosages from a VCF file
+
+First, load the package and the public example model.
 
 ```r
-devtools::load_all()
+library(DynamicPGS)
+data(adata_jecs_public)
+
+head(adata_jecs_public$proxy)
 ```
 
-Do not source individual files such as `source("R/getData.R")` during package development, because this may create conflicts between objects in the global environment and functions loaded from the package.
+The dynamic PGS model is based on 238 lead variants identified by dynamic association mapping of childhood BMI. Genotype dosages for these variants can be extracted from a bgzip-compressed and tabix-indexed VCF file as follows:
+
+```r
+G <- getDoseFromVCF(
+  vcf = "/path/to/your/vcf",
+  variant = unique(adata_jecs_public$proxy[, 1])
+)
+```
+
+The returned object `G` is a dosage matrix with variants in rows and samples in columns.
+
+`getDoseFromVCF()` first extracts candidate variants by genomic position and then matches chromosome, position, reference allele, and alternate allele. Variant IDs are expected to be in the following format:
+
+```text
+CHR:POS:REF:ALT
+```
+
+The model uses variant definitions on GRCh38. If your VCF is based on GRCh37/hg19 or another genome build, please map the variant coordinates and alleles to the corresponding GRCh38 variant IDs before computing the dynamic PGS.
+
+If your VCF does not contain some of the 238 lead variants, you may use proxy variants listed in `adata_jecs_public$proxy`. This table contains candidate proxy variants with LD (r^2 > 0.8) in the JECS reference population. The LD (r^2) value is shown in the third column.
+
+After extracting dosages using proxy variants, make sure that the row names of `G` correspond to the original GRCh38 lead-variant IDs used in the model.
+
+```r
+# not run
+rownames(G) <- correct_var_id
+```
+
+### 2. Compute dynamic PGS
+
+Dynamic PGS can then be computed at any target values of age or time. For example, the following code evaluates dynamic PGS from 0 to 54 months.
+
+```r
+adata <- getDynamicPGS(
+  adata = adata_jecs_public,
+  G = G,
+  xstar = 0:54
+)
+```
+
+Plot the dynamic PGS for the first individual:
+
+```r
+plot(adata, i = 1)
+```
+
+By default, the allele frequencies stored in the published model are used for centring genotypes. This assumes that allele frequencies in your target population are reasonably similar to those in the JECS reference population.
+
+If this assumption is not appropriate, allele frequencies can instead be estimated from `G`:
+
+```r
+adata <- getDynamicPGS(
+  adata = adata_jecs_public,
+  G = G,
+  xstar = 0:54,
+  af = NULL
+)
+```
+
+Alternatively, you can supply your own named allele-frequency vector:
+
+```r
+adata <- getDynamicPGS(
+  adata = adata_jecs_public,
+  G = G,
+  xstar = 0:54,
+  af = af_vector_with_var_id
+)
+```
+
+In this case, `names(af_vector_with_var_id)` must match the variant IDs used by the model, such as `CHR:POS:REF:ALT`.
 
 ## Input data
 
