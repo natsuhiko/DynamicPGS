@@ -53,7 +53,7 @@ The model uses variant definitions on GRCh38. If your VCF is based on GRCh37/hg1
 
 If your VCF does not contain some of the 238 lead variants, you may use proxy variants listed in `adata_jecs_public$proxy`. This table contains candidate proxy variants with LD (r^2 > 0.8) in the JECS reference population. The LD (r^2) value is shown in the third column.
 
-After extracting dosages using proxy variants, make sure that the row names of `G` correspond to the original GRCh38 lead-variant IDs used in the model.
+After extracting dosages using proxy variants, make sure that the row names of `G` correspond to the original GRCh38 variant IDs used in the model.
 
 ```r
 # not run
@@ -65,7 +65,7 @@ rownames(G) <- correct_var_id
 Dynamic PGS can then be computed at any target values of age or time. For example, the following code evaluates dynamic PGS from 0 to 54 months.
 
 ```r
-adata <- getDynamicPGS(
+adata_with_your_pgs <- getDynamicPGS(
   adata = adata_jecs_public,
   G = G,
   xstar = 0:54
@@ -75,15 +75,24 @@ adata <- getDynamicPGS(
 Plot the dynamic PGS for the first individual:
 
 ```r
-plot(adata, i = 1)
+plot(adata_with_your_pgs, i = 1)
 ```
+
+The dynamic PGS estimates are stored in the `PGS` element of the returned object. This is a matrix whose rows correspond to the evaluated points in `xstar` and whose columns correspond to individuals.
+
+```r
+dim(adata$PGS)
+adata$PGS[1:10, 1:10]
+```
+
+The standard error of the PGS is stored in `PGS_SE`.
 
 By default, the allele frequencies stored in the published model are used for centring genotypes. This assumes that allele frequencies in your target population are reasonably similar to those in the JECS reference population.
 
 If this assumption is not appropriate, allele frequencies can instead be estimated from `G`:
 
 ```r
-adata <- getDynamicPGS(
+adata_with_your_pgs <- getDynamicPGS(
   adata = adata_jecs_public,
   G = G,
   xstar = 0:54,
@@ -94,7 +103,7 @@ adata <- getDynamicPGS(
 Alternatively, you can supply your own named allele-frequency vector:
 
 ```r
-adata <- getDynamicPGS(
+adata_with_your_pgs <- getDynamicPGS(
   adata = adata_jecs_public,
   G = G,
   xstar = 0:54,
