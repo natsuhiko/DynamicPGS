@@ -38,7 +38,7 @@
 #' }
 #'
 #' @export
-getDynamicPGS = function(adata, Gall, xstar=NULL, af=adata$af){
+getDynamicPGS = function(adata, Gall, xstar=NULL, af=adata$allele_frequency){
     
     if(is.null(af)){ af = rowMeans(Gall,na.rm=T)/2; names(af)=rownames(Gall) }
     if(is.null(xstar)){ xstar = Seq(adata$support_x)}
