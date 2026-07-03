@@ -49,10 +49,51 @@ getMockData = function(adata, Nd=1000, ncore=max(1, parallel::detectCores()-1)){
         unlist(parallel::mclapply(idx_list, one_id_fun, mc.cores=ncore))
     )
     
-    adata2$y = cbind(adata2$X, tKnm)%*%beta0 + tmp + rnorm(N,0,sqrt(sigma2))
+    # genotype effect
+    pgs = 0
+    if(!is.null(adata$Beta)&!is.na(adata$allele_frequency)){
+        G=simGenoFromLmat(adata$Lmat,adata$allele_frequency)
+        Gstar = G-adata$allele_frequency*2
+        adata2$G1 = G
+        for(l in seq(nrow(adata$Beta))){
+            pgs = pgs + c(cbind(tKnm, 1)%*%adata$Beta[l,])*Gstar[l,]
+        }
+    }
+    
+    adata2$y = cbind(adata2$X, tKnm)%*%beta0 + tmp + rnorm(N,0,sqrt(sigma2)) + pgs
     
     adata2
 }
+
+simGenoFromLmat <- function(Lmat, af, seed=NULL, id_col="IID", fid_col="FID"){
+    if(!is.null(seed)) set.seed(seed)
+    if(is.null(names(af))) names(af) <- paste0("var", seq_along(af))
+    stopifnot(id_col %in% colnames(Lmat), fid_col %in% colnames(Lmat))
+    af <- as.numeric(af)
+    if(any(!is.finite(af) | af <= 0 | af >= 1)) stop("af must be finite and between 0 and 1.")
+    
+    iid <- as.character(Lmat[[id_col]])
+    fid <- as.character(Lmat[[fid_col]])
+    L <- as.matrix(Lmat[, setdiff(colnames(Lmat), c(fid_col, id_col)), drop=FALSE])
+    N <- nrow(L)
+    V <- length(af)
+    
+    G <- matrix(NA_real_, nrow=V, ncol=N, dimnames=list(names(af), iid))
+    idx_list <- split(seq_len(N), factor(fid, levels=unique(fid)))
+    
+    q0 <- qnorm((1 - af)^2)
+    q1 <- qnorm((1 - af)^2 + 2 * af * (1 - af))
+    
+    for(ii in idx_list){
+        m <- length(ii)
+        Lb <- L[ii, seq_len(m), drop=FALSE]
+        Z <- Lb %*% matrix(rnorm(m * V), nrow=m, ncol=V)
+        G[, ii] <- t((Z > matrix(q0, m, V, byrow=TRUE)) + (Z > matrix(q1, m, V, byrow=TRUE)))
+    }
+    
+    G
+}
+
 
 simulate_king <- function(N=1000, max_3rd_degree_size=3, seed=1){
     set.seed(seed)
