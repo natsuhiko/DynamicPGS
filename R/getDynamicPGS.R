@@ -148,7 +148,7 @@ plot.DynamicPGS <- function(x, i=NULL, Prediction=FALSE, col=1, add=FALSE, xlab=
 #'   `Beta`, `sigma2`, and `PhiXty`.
 #' @export
 getPublicData = function(adata){
-    keep0 = c("ta","rho","M","Sinv","Beta","sigma2","PhiXty","proxy","support_x","r_rho","af")
+    keep0 = c("ta","rho","M","Sinv","Beta","sigma2","PhiXty","proxy","support_x","r_rho","allele_frequency")
     keep = intersect(keep0, names(adata))
     out = adata[keep]
     missing = setdiff(keep0, names(adata))
