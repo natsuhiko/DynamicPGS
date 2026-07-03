@@ -51,7 +51,7 @@ getMockData = function(adata, Nd=1000, ncore=max(1, parallel::detectCores()-1)){
     
     # genotype effect
     pgs = 0
-    if(!is.null(adata$Beta)&!is.na(adata$allele_frequency)){
+    if(!is.null(adata$Beta)&!is.null(adata$allele_frequency)){
         G=simGenoFromLmat(adata$Lmat,adata$allele_frequency)
         Gstar = G-adata$allele_frequency*2
         adata2$G1 = G
