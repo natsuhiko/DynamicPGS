@@ -4,9 +4,7 @@ DynamicPGS is an R package for modelling longitudinal phenotypes with Gaussian-p
 
 The typical workflow is:
 
-```r
-getData() -> gpreg1() -> gpreg2() -> getP() -> getDynamicPGS()
-```
+![DynamicPGS overview](man/figures/workflow.png)
 
 ## Installation
 
