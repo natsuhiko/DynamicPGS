@@ -38,9 +38,9 @@
 #' }
 #'
 #' @export
-getDynamicPGS = function(adata, Gall, xstar=NULL, af=NULL){
+getDynamicPGS = function(adata, Gall, xstar=NULL, af=adata$af){
     
-    if(is.null(af)){ af = rowMeans(Gall,na.rm=T)/2 }
+    if(is.null(af)){ af = rowMeans(Gall,na.rm=T)/2; names(af)=rownames(Gall) }
     if(is.null(xstar)){ xstar = Seq(adata$support_x)}
     
     ta = adata$ta
@@ -52,7 +52,7 @@ getDynamicPGS = function(adata, Gall, xstar=NULL, af=NULL){
     beta0 = c(tail(adata$PhiXty,M), adata$PhiXty[1])
     
     com = intersect(rownames(Gall),rownames(B))
-    af = af[match(com,rownames(Gall))]
+    af = af[com]
     B = B[com,,drop=F]
     Gall = Gall[com,,drop=F]
     L = nrow(B)
@@ -148,7 +148,7 @@ plot.DynamicPGS <- function(x, i=NULL, Prediction=FALSE, col=1, add=FALSE, xlab=
 #'   `Beta`, `sigma2`, and `PhiXty`.
 #' @export
 getPublicData = function(adata){
-    keep0 = c("ta","rho","M","Sinv","Beta","sigma2","PhiXty","proxy","support_x","r_rho")
+    keep0 = c("ta","rho","M","Sinv","Beta","sigma2","PhiXty","proxy","support_x","r_rho","af")
     keep = intersect(keep0, names(adata))
     out = adata[keep]
     missing = setdiff(keep0, names(adata))
