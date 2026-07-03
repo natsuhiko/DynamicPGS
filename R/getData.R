@@ -17,7 +17,7 @@ print.DynamicPGS <- function(x, ...) {
   cat("Max family size: ", x$max_family_size, "\n", sep="")
   cat("Support: ", min(x$x), " to ", max(x$x), "\n", sep="")
   cat("Covariates:\n")
-  print(data.frame(Var=names(x$nh),degrees_of_freedom=x$nh))
+  print(data.frame(degrees_of_freedom=x$nh))
   if(!is.null(x$rho)){cat("Step 1 optimization completed.\n")}
   if(!is.null(x$delta2d)){cat("Step 2 optimization completed.\n")}
   if(!is.null(x$Beta)){cat("Ready for dynamic PGS computation\n")}
