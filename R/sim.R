@@ -1,4 +1,4 @@
-getMockData = function(adata, Nd=1000, ncore=max(1, parallel::detectCores()-1)){
+getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip", BCFTOOLS="bcftools", ncore=max(1, parallel::detectCores()-1)){
     
     k = simulate_king(Nd)
     uiid = k$iid
@@ -42,7 +42,6 @@ getMockData = function(adata, Nd=1000, ncore=max(1, parallel::detectCores()-1)){
             tk = cbind(tk, cbind(tKnm[ii,,drop=FALSE], 1) * Lmat[ii,j])
             c1prior = c(c1prior, rep(delta2d, c(M,1)))
         }
-        
         c(tk%*%rnorm(n1*(M+1),0,sqrt(c1prior)))
     }
     tmp = try(
@@ -59,10 +58,21 @@ getMockData = function(adata, Nd=1000, ncore=max(1, parallel::detectCores()-1)){
             pgs = pgs + c(cbind(tKnm, 1)%*%adata$Beta[l,])*Gstar[l,match(adata2$iid,adata2$Lmat[,2])]
         }
     }
-    
     adata2$y = cbind(adata2$X, tKnm)%*%beta0 + tmp + rnorm(N,0,sqrt(sigma2)) + pgs
+    if(!is.null(af_null)){
+        G = simGeno(adata2, af=af_null)
+        adata2$G_under_null = G
+    }
+    if(!is.null(outdir)){
+        write.table(data.frame(IID=adata2$iid, x=adata2$x, y=adata$y), col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/input.tsv",sep=""))
+        write.table(data.frame(pc,sex), col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/covariates.tsv",sep=""))
+        write.table(k, col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/king.kin0",sep=""))
+        writeDoseToVCF(rbind(adata2$G_under_null,adata2$G_under_alt),
+            paste(outdir, "/dose.vcf.gz",sep=""), BGZIP=BGZIP, BCFTOOLS=BCFTOOLS, index=TURE)
+    }
     
-    adata2
+    
+    invisible(adata2)
 }
 
 
@@ -217,4 +227,154 @@ simulate_x_from_xlist <- function(xlist, N=1000, iid=NULL, seed=1, jitter=0, rou
     out <- do.call(rbind, out); 
     rownames(out) <- NULL;
     out
+}
+
+
+
+
+
+#' Write a dosage matrix to a VCF file
+#'
+#' `writeDoseToVCF()` writes a numeric dosage matrix to a minimal VCF file with
+#' `FORMAT/DS` entries. The matrix is assumed to contain alternate-allele dosages,
+#' with variants in rows and samples in columns.
+#'
+#' Variant information is taken from `variant_info` if supplied, otherwise from
+#' `attr(dose, "variant_info")`, and finally from `rownames(dose)`. Row names must
+#' be in the form `CHR:POS:REF:ALT`, for example `"chr1:12345:A:G"`.
+#'
+#' @param dose Numeric matrix or matrix-like object. Rows are variants and columns
+#'   are samples. Column names are used as VCF sample IDs.
+#' @param outfile Character scalar. Output VCF path. If the filename ends with
+#'   `.gz`, the output is bgzip-compressed using `BGZIP`.
+#' @param variant_info Optional data frame containing variant metadata. It must
+#'   contain columns `CHR`, `POS`, `REF`, and `ALT`, and have the same number of
+#'   rows as `dose`. If `NULL`, `attr(dose, "variant_info")` is used when
+#'   available; otherwise `rownames(dose)` are parsed as `CHR:POS:REF:ALT`.
+#' @param digits Integer. Number of digits after the decimal point used when
+#'   writing dosage values.
+#' @param sort Logical. If `TRUE`, variants are sorted by chromosome, position,
+#'   reference allele, and alternate allele before writing.
+#' @param id Character scalar or vector. Value written to the VCF `ID` column. If
+#'   length one, the same value is used for all variants. If a vector, it must have
+#'   length equal to the number of variants.
+#' @param BGZIP Character scalar. Path to the `bgzip` executable, or command name
+#'   if `bgzip` is available in the system `PATH`.
+#' @param BCFTOOLS Character scalar. Path to the `bcftools` executable, or command
+#'   name if `bcftools` is available in the system `PATH`.
+#' @param index Logical. If `TRUE`, create a tabix index for the bgzip-compressed
+#'   VCF using `bcftools index -t -f`.
+#' @param progress Logical. If `TRUE`, show a progress bar while writing variants.
+#'
+#' @return Invisibly returns `outfile`.
+#'
+#' @details
+#' This function writes a minimal VCF containing only the `DS` FORMAT field. It
+#' does not write `GT`, genotype probabilities, INFO fields, or contig header
+#' lines. Missing or non-finite dosage values are written as `"."`.
+#'
+#' The output dosage values are not rounded to hard genotypes and are not clipped
+#' to the interval `[0, 2]`.
+#'
+#' @examples
+#' \dontrun{
+#' variants <- c("chr1:12345:A:G", "chr1:67890:C:T")
+#' samples <- c("ID001", "ID002", "ID003")
+#' D <- matrix(c(0.1, 1.2, 2.0, 0.0, NA, 1.7), nrow=2, byrow=TRUE)
+#' rownames(D) <- variants
+#' colnames(D) <- samples
+#'
+#' writeDoseToVCF(D, "dose.vcf")
+#'
+#' writeDoseToVCF(
+#'   D,
+#'   "dose.vcf.gz",
+#'   BGZIP = "bgzip",
+#'   BCFTOOLS = "bcftools",
+#'   index = TRUE
+#' )
+#' }
+#'
+#' @export
+writeDoseToVCF = function(dose, outfile, variant_info=NULL, digits=4, sort=TRUE, id=".", BGZIP="bgzip", BCFTOOLS="bcftools", index=TURE, progress=TRUE){
+    if(is.null(dim(dose))) stop("'dose' must be a matrix-like object.")
+    dose = as.matrix(dose)
+    if(is.null(colnames(dose))) colnames(dose) = paste0("S", seq_len(ncol(dose)))
+    sample_ids = colnames(dose)
+
+    if(is.null(variant_info)) variant_info = attr(dose, "variant_info")
+    if(!is.null(variant_info) && all(c("CHR","POS","REF","ALT") %in% colnames(variant_info))){
+        vi = as.data.frame(variant_info, stringsAsFactors=FALSE)
+        if(nrow(vi) != nrow(dose)) stop("'variant_info' must have the same number of rows as 'dose'.")
+        vi$CHR = as.character(vi$CHR); vi$POS = as.integer(vi$POS)
+        vi$REF = as.character(vi$REF); vi$ALT = as.character(vi$ALT)
+    }else{
+        if(is.null(rownames(dose))) stop("Either rownames(dose) as CHR:POS:REF:ALT or 'variant_info' is required.")
+        sp = strsplit(rownames(dose), ":", fixed=TRUE)
+        if(any(lengths(sp) != 4)) stop("rownames(dose) must be in CHR:POS:REF:ALT format.")
+        vi = data.frame(CHR=sapply(sp, `[`, 1), POS=as.integer(sapply(sp, `[`, 2)), REF=sapply(sp, `[`, 3), ALT=sapply(sp, `[`, 4), stringsAsFactors=FALSE)
+    }
+    if(any(is.na(vi$POS))) stop("POS must be integer.")
+
+    if(length(id)==1L) id = rep(id, nrow(dose))
+    if(length(id) != nrow(dose)) stop("'id' must have length 1 or nrow(dose).")
+    id = as.character(id)
+
+    chr_rank = function(x){
+        y = sub("^chr", "", x, ignore.case=TRUE)
+        z = match(y, c(as.character(1:22), "X", "Y", "XY", "MT", "M"))
+        z[is.na(z)] = 1000 + match(y[is.na(z)], unique(y[is.na(z)]))
+        z
+    }
+
+    if(sort){
+        o = order(chr_rank(vi$CHR), vi$POS, vi$REF, vi$ALT)
+        vi = vi[o,,drop=FALSE]
+        dose = dose[o,,drop=FALSE]
+        id = id[o]
+    }
+
+    compress = grepl("\\.gz$", outfile)
+    con = if(compress) pipe(paste(shQuote(BGZIP), "-c >", shQuote(outfile)), open="w") else file(outfile, open="w")
+    closed = FALSE
+    pb = NULL
+    on.exit({
+        if(!closed) try(close(con), silent=TRUE)
+        if(!is.null(pb)) try(close(pb), silent=TRUE)
+    }, add=TRUE)
+
+    header = c(
+        "##fileformat=VCFv4.2",
+        "##source=DynamicPGS",
+        "##FORMAT=<ID=DS,Number=1,Type=Float,Description=\"Estimated alternate allele dosage\">",
+        paste(c("#CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO","FORMAT",sample_ids), collapse="\t")
+    )
+    writeLines(header, con)
+
+    fmt_ds = function(x){
+        y = rep(".", length(x))
+        ok = is.finite(x)
+        y[ok] = formatC(x[ok], format="f", digits=digits)
+        y
+    }
+
+    if(progress) pb = utils::txtProgressBar(min=0, max=nrow(dose), style=3)
+    for(i in seq_len(nrow(dose))){
+        line = paste(c(vi$CHR[i], vi$POS[i], id[i], vi$REF[i], vi$ALT[i], ".", "PASS", ".", "DS", fmt_ds(dose[i,])), collapse="\t")
+        writeLines(line, con)
+        if(progress) utils::setTxtProgressBar(pb, i)
+    }
+    if(!is.null(pb)){ close(pb); pb = NULL }
+
+    status = close(con)
+    closed = TRUE
+    if(!is.null(status) && length(status)>0 && !is.na(status) && status!=0) stop("Failed to write VCF.")
+
+    if(index){
+        if(!compress) stop("index=TRUE requires bgzip-compressed output, e.g. outfile='out.vcf.gz'.")
+        st = system2(BCFTOOLS, c("index","-t","-f",outfile))
+        if(!is.null(st) && st != 0) stop("bcftools index failed.")
+    }
+
+    invisible(outfile)
 }
