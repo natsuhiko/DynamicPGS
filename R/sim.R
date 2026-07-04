@@ -66,7 +66,7 @@ getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip",
     if(!is.null(outdir)){
         write.table(data.frame(IID=adata2$iid, x=adata2$x, y=adata2$y), col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/input.tsv",sep=""))
         write.table(data.frame(pc,sex), col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/covariates.tsv",sep=""))
-        write.table(k, col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/king.kin0",sep=""))
+        write.table(k$king, col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/king.kin0",sep=""))
         writeDoseToVCF(rbind(adata2$G_under_null,adata2$G_under_alt),
             paste(outdir, "/dose.vcf.gz",sep=""), BGZIP=BGZIP, BCFTOOLS=BCFTOOLS, index=TURE)
     }
@@ -212,25 +212,24 @@ simulate_king <- function(N=1000, max_3rd_degree_size=3, seed=1){
     list(king=kin0, iid=iid)
 }
 
+
 simulate_x_from_xlist <- function(xlist, N=1000, iid=NULL, seed=1, jitter=0, round_digits=1){
     set.seed(seed)
-    xlist <- lapply(xlist, function(z) sort(round(as.numeric(z[is.finite(z)]), round_digits)))
+    xlist <- lapply(xlist, function(z) sort(unique(round(as.numeric(z[is.finite(z)]), round_digits))))
     xlist <- xlist[lengths(xlist) > 0]
     if(length(xlist)==0) stop("xlist has no valid month-age vectors")
     if(is.null(iid)) iid <- sprintf("SIM%06d", seq_len(N))
     if(length(iid) != N) stop("length(iid) must be equal to N")
     out <- lapply(iid, function(id){
         x <- sample(xlist, 1)[[1]]
-        if(jitter > 0) x <- pmax(0, x + rnorm(length(x), 0, jitter))
+        if(jitter > 0) x <- round(pmax(0, x + rnorm(length(x), 0, jitter)), round_digits)
+        x <- sort(unique(x))
         data.frame(IID=id, x=x)
     })
-    out <- do.call(rbind, out); 
-    rownames(out) <- NULL;
+    out <- do.call(rbind, out)
+    rownames(out) <- NULL
     out
 }
-
-
-
 
 
 #' Write a dosage matrix to a VCF file
