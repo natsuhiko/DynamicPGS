@@ -64,7 +64,7 @@ getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip",
         adata2$G_under_null = G
     }
     if(!is.null(outdir)){
-        write.table(data.frame(IID=adata2$iid, x=adata2$x, y=adata$y), col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/input.tsv",sep=""))
+        write.table(data.frame(IID=adata2$iid, x=adata2$x, y=adata2$y), col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/input.tsv",sep=""))
         write.table(data.frame(pc,sex), col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/covariates.tsv",sep=""))
         write.table(k, col=T,row=F,sep="\t",quote=F,file=paste(outdir, "/king.kin0",sep=""))
         writeDoseToVCF(rbind(adata2$G_under_null,adata2$G_under_alt),
