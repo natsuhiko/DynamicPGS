@@ -60,7 +60,7 @@ getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip",
     }
     adata2$y = cbind(adata2$X, tKnm)%*%beta0 + tmp + rnorm(N,0,sqrt(sigma2)) + pgs
     if(!is.null(af_null)){
-        G = simDose(adata2, af=af_null)
+        G = simDose(adata2, af=af_null, chr="0")
         adata2$G_under_null = G
     }
     if(!is.null(outdir)){
