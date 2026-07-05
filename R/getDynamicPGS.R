@@ -114,7 +114,7 @@ plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=1, add=
     if(ptype==1){
         x0 = Seq(x$support_x)
         Knm = getK(x0, x$ta, x$rho)
-        Kmm = getKprime(x$ta, x$ta, x$rho)
+        Kmm = getK(x$ta, x$ta, x$rho)
         R = chol(Kmm)
         tKnm = t(forwardsolve(t(R), t(Knm)))
         y0 = tKnm %*% tail(x$PhiXty, x$M) + x$PhiXty[1]
@@ -126,7 +126,7 @@ plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=1, add=
         PhiKdty = x$PhiKdty
         x0 = Seq(x$support_x)
         Knm = getK(x0, x$ta, x$rho)
-        Kmm = getKprime(x$ta, x$ta, x$rho)
+        Kmm = getK(x$ta, x$ta, x$rho)
         R = chol(Kmm)
         tKnm = cbind(t(forwardsolve(t(R), t(Knm))),1)
         y0 = tKnm %*% c(c(tail(x$PhiXty, M), x$PhiXty[1]) + PhiKdty[1:(M+1)+(i-1)*(M+1)])
