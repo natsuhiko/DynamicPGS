@@ -330,6 +330,7 @@ GPReg1 = function(adata, rho_a=0.01, rho_b=5, Verbose=F, Plot=F, MAXITR=100){
     }
 
     adata$P = P
+    adata$M = M
     adata$nh = nh
     adata$rho = rho
     adata$A = A
