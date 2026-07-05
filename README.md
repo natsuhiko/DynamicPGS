@@ -57,7 +57,7 @@ DynamicPGS reads dosage values from a bgzip-compressed and indexed VCF/BCF file 
 ```r
 lead_variants <- unique(adata_jecs_public$proxy[, 1])
 
-Gall <- getDoseFromVCF(
+G <- getDoseFromVCF(
   vcf = "/path/to/your/imputed.vcf.gz",
   variants = lead_variants,
   field = "DS",
@@ -65,17 +65,17 @@ Gall <- getDoseFromVCF(
 )
 ```
 
-The returned object `Gall` is a numeric dosage matrix with variants in rows and samples in columns.
+The returned object `G` is a numeric dosage matrix with variants in rows and samples in columns.
 
 ```r
-dim(Gall)
-head(rownames(Gall))
-head(colnames(Gall))
+dim(G)
+head(rownames(G))
+head(colnames(G))
 ```
 
 In `variants` mode, `getDoseFromVCF()` first extracts records overlapping the requested positions and then keeps only records whose chromosome, position, reference allele, and alternate allele exactly match the requested `CHR:POS:REF:ALT` IDs. Missing variants are returned as rows filled with `NA`.
 
-If your VCF does not contain some of the lead variants, you may use proxy variants listed in `adata_jecs_public$proxy`. The public model includes `Beta` and `Sinv` entries for these proxy variants. Therefore, when proxy variants are used, the row names of `Gall` must remain as the actual proxy variant IDs in `CHR:POS:REF:ALT` format. Do not rename proxy variants back to the original lead variant IDs. `getDynamicPGS()` matches variants by `intersect(rownames(Gall), rownames(adata$Beta))`; therefore, incorrect row names can cause the function to use the wrong variant-specific effect sizes `Beta`.
+If your VCF does not contain some of the lead variants, you may use proxy variants listed in `adata_jecs_public$proxy`. The public model includes `Beta` and `Sinv` entries for these proxy variants. Therefore, when proxy variants are used, the row names of `G` must remain as the actual proxy variant IDs in `CHR:POS:REF:ALT` format. Do not rename proxy variants back to the original lead variant IDs. `getDynamicPGS()` matches variants by `intersect(rownames(G), rownames(adata$Beta))`; therefore, incorrect row names can cause the function to use the wrong variant-specific effect sizes `Beta`.
 
 ### 3. Compute dynamic PGS
 
@@ -84,7 +84,7 @@ Dynamic PGS can be evaluated at arbitrary values of the index, for example from 
 ```r
 adata_with_pgs <- getDynamicPGS(
   adata = adata_jecs_public,
-  Gall = Gall,
+  Gall = G,
   xstar = 0:54
 )
 ```
@@ -116,7 +116,7 @@ To estimate allele frequencies from your dosage matrix instead, set `af = NULL`:
 ```r
 adata_with_pgs <- getDynamicPGS(
   adata = adata_jecs_public,
-  Gall = Gall,
+  Gall = G,
   xstar = 0:54,
   af = NULL
 )
@@ -127,7 +127,7 @@ You can also supply a named allele-frequency vector:
 ```r
 adata_with_pgs <- getDynamicPGS(
   adata = adata_jecs_public,
-  Gall = Gall,
+  Gall = G,
   xstar = 0:54,
   af = af_vector
 )
@@ -170,7 +170,10 @@ data/MockData/phenotype.tsv
 
 Covariates can be supplied as a `data.frame` or as a file. The number of rows in the covariate table must match the number of rows in the phenotype table before missing-value filtering.
 
-Numeric covariates are standardised internally. Character or factor covariates are expanded into dummy variables.
+Numeric covariates are standardised internally. Character or factor covariates are expanded into dummy variables. See the following mock covariate data:
+```text
+data/MockData/covariates.tsv
+```
 
 ### 3. Prepare relatedness information
 
@@ -182,15 +185,19 @@ Relatedness can be supplied as a KING pairwise relatedness result. The table mus
 | `ID2` | Second individual ID |
 | `Kinship` | KING kinship estimate |
 
-If no KING file is supplied, all individuals are treated as unrelated.
+If no KING file is supplied, all individuals are treated as unrelated. Please check the mock KING data:
+```text
+data/MockData/king.kin0
+```
 
 ### 4. Create a DynamicPGS object
 
 ```r
+# in the package directory
 adata <- getData(
-  Data = "phenotype.tsv",
-  Covariates = "covariates.tsv",
-  king = "king.kin0",
+  Data = "data/phenotype.tsv",
+  Covariates = "data/covariates.tsv",
+  king = "data/king.kin0",
   inducing_points = seq(0, 60, by = 6)
 )
 ```
@@ -251,8 +258,8 @@ adata <- prepAssoc(
 To extract all variants in a region:
 
 ```r
-Gall <- getDoseFromVCF(
-  vcf = "imputed.vcf.gz",
+G <- getDoseFromVCF(
+  vcf = "dose.vcf.gz",
   region = "chr1:100000-200000",
   field = "DS"
 )
@@ -263,8 +270,8 @@ To extract selected variants:
 ```r
 variants <- c("chr1:12345:A:G", "chr1:67890:C:T")
 
-Gall <- getDoseFromVCF(
-  vcf = "imputed.vcf.gz",
+G <- getDoseFromVCF(
+  vcf = "dose.vcf.gz",
   variants = variants,
   field = "DS"
 )
@@ -282,20 +289,33 @@ variant2  1.00   0.00   0.98
 
 Rows are variants and columns are individuals. Column names should correspond to the unique individual IDs in the fitted `DynamicPGS` object.
 
+A small mock dosage data is included under `data/MockData/` so that the full workflow can be tested without preparing external files. 
+```text
+data/MockData/dose.vcf.gz
+```
+In this data, chromosome "0" means genotype dosages were simulated under the null hypothesis and "1" means genotype dosages were simulated under the alternative hypothesis of the 238 real BMI assosiations.
+```r
+L=238
+G=rbind(
+    getDoseFromVCF("/data/MockData/dose.vcf.gz",reg=paste0("0:1-",1000-L)),
+    getDoseFromVCF("/data/MockData/dose.vcf.gz",reg=paste0("1:1-",L))
+)
+```
+
 ### Simulate dosage data
 
 For testing and examples, genotype dosages can be simulated from allele frequencies using the relatedness structure stored in a `DynamicPGS` object.
 
 ```r
 af <- c(0.10, 0.25, 0.40)
-Gall <- simDose(adata, af, seed = 1)
+G <- simDose(adata, af, seed = 1)
 ```
 
 If `af` has names in `CHR:POS:REF:ALT` format, those names are used as variant IDs.
 
 ```r
 af <- c("chr1:12345:A:C" = 0.10, "chr2:23456:G:T" = 0.25)
-Gall <- simDose(adata, af, seed = 1)
+G <- simDose(adata, af, seed = 1)
 ```
 
 ## Dynamic genetic association testing
@@ -305,7 +325,7 @@ Run variant-level dynamic association testing:
 ```r
 adata <- getP(
   adata,
-  Gall = Gall,
+  Gall = G,
   delta2g = 0.01,
   Beta = TRUE,
   Sinv = TRUE,
@@ -361,7 +381,7 @@ After dynamic association testing, compute dynamic PGS at any target values of t
 ```r
 adata <- getDynamicPGS(
   adata = adata,
-  Gall = Gall,
+  Gall = G,
   xstar = 0:60,
   af = adata$allele_frequency
 )
