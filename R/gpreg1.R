@@ -332,6 +332,8 @@ GPReg1 = function(adata, rho_a=0.01, rho_b=5, Verbose=F, Plot=F, MAXITR=100){
     adata$P = P
     adata$nh = nh
     adata$rho = rho
+    adata$A = A
+    adata$sigma2 = sigma2
     adata$delta2 = delta2
     adata$lball = lball
     adata$PhiXty = PhiXty

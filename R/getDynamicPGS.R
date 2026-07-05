@@ -112,13 +112,19 @@ plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=1, add=
     }
     
     if(ptype==1){
+        M = x$M
+        A = x$A
+        sigma2 = x$sigma2
         x0 = Seq(x$support_x)
         Knm = getK(x0, x$ta, x$rho)
         Kmm = getK(x$ta, x$ta, x$rho)
         R = chol(Kmm)
         tKnm = t(forwardsolve(t(R), t(Knm)))
-        y0 = tKnm %*% tail(x$PhiXty, x$M) + x$PhiXty[1]
+        y0 = tKnm %*% tail(x$PhiXty, M) + x$PhiXty[1]
+        flag = c(tail(seq(nrow(A)),M),1)
+        s = sqrt(diag(tKnm%*%solve(A[flag,flag])%*%t(tKnm))*sigma2 + ifelse(Prediction,sigma2,0))
         boxplot(x$y ~ x$x, at=x0)
+        polygon(c(x0,rev(x0)), c(y0-1.96*s,rev(y0+1.96*s)), col=Alpha(col))
         lines(x0, y0, col=col, lwd=3)
     }else if(ptype==2){
         if(is.null(i)) i <- 1
