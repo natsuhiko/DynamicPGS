@@ -161,6 +161,11 @@ id002   18     20.1
 
 Each row corresponds to one observation. Multiple rows may belong to the same individual. The current implementation assumes that there are no duplicated observations at the same `x` value within the same individual.
 
+A small mock dataset is included under `data/MockData/` so that the full workflow can be tested without preparing external files. 
+```text
+data/MockData/phenotype.tsv
+```
+
 ### 2. Prepare covariates
 
 Covariates can be supplied as a `data.frame` or as a file. The number of rows in the covariate table must match the number of rows in the phenotype table before missing-value filtering.
