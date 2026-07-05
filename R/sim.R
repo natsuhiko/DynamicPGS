@@ -141,8 +141,8 @@ simDose <- function(adata, af, seed=NULL, id_col="IID", fid_col="FID", chr="chr0
     if(any(!is.finite(af) | af <= 0 | af >= 1)) stop("af must be finite and between 0 and 1.")
 
     V <- length(af)
-    #is_varid <- !is.null(af_name) && length(af_name)==V && all(grepl("^[^:]+:[0-9]+:[ACGT]+:[ACGT,]+$", af_name))
-    is_varid <- !is.null(af_name) && length(af_name)==V && sum(lengths(strsplit(af_name,":"))==4)==V
+    is_varid <- !is.null(af_name) && length(af_name)==V && all(grepl("^[^:]+:[0-9]+:[ACGT]+:[ACGT,]+$", af_name))
+    #is_varid <- !is.null(af_name) && length(af_name)==V && sum(lengths(strsplit(af_name,":"))==4)==V
     variant_id <- if(is_varid) af_name else paste0(chr, seq_len(V), ":A:C")
 
     iid <- as.character(Lmat[[id_col]])
