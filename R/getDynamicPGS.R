@@ -155,9 +155,9 @@ plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=2, add=
         xstar <- x$xstar
 
         if(Prediction){
-            if(is.null(x$pop_avg)) stop("x$pop_avg is missing.")
+            if(is.null(x$pop_avg_xstar)) stop("x$pop_avg_xstar is missing.")
             if(is.null(x$sigma2)) stop("x$sigma2 is missing.")
-            pred <- as.numeric(x$pop_avg + x$PGS[,i])
+            pred <- as.numeric(x$pop_avg_xstar + x$PGS[,i])
             se <- sqrt(x$sigma2 + x$PGS_SE[,i]^2)
             if(is.null(ylab)) ylab <- "Predicted phenotype"
         }else{
