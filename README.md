@@ -264,9 +264,9 @@ variant2  1.00   0.00   0.98
 
 Column names should correspond to individuals in the fitted `DynamicPGS` object.
 
-## Dynamic association testing
+### 4.3. Dynamic genetic association testing
 
-Run variant-level dynamic association testing:
+Run variant-level dynamic genetic association testing:
 
 ```r
 adata <- getP(
@@ -279,7 +279,7 @@ adata <- getP(
 )
 ```
 
-The association p-values are stored in:
+The association p-values computed from the score statistics are stored in:
 
 ```r
 head(adata$pval)
@@ -366,85 +366,6 @@ polygon(
 )
 lines(dpgs$xstar, pred)
 ```
-
-## Development notes
-
-### Updating documentation
-
-Add roxygen2 comments immediately above each exported function, then run:
-
-```r
-devtools::document()
-```
-
-This updates:
-
-```text
-NAMESPACE
-man/*.Rd
-```
-
-### Loading during development
-
-Use:
-
-```r
-devtools::load_all()
-```
-
-rather than sourcing files manually.
-
-If you accidentally sourced functions and see messages such as:
-
-```text
-getData masks DynamicPGS::getData()
-gpreg1 masks DynamicPGS::gpreg1()
-```
-
-remove the global objects:
-
-```r
-rm(list = c("getData", "gpreg1"))
-devtools::load_all()
-```
-
-or restart the R session and run `devtools::load_all()` again.
-
-### Checking the package
-
-Run:
-
-```r
-devtools::check()
-```
-
-Before submission or release, also check that all exported functions have examples and help pages.
-
-## Main exported functions
-
-| Function | Purpose |
-|---|---|
-| `getData()` | Create a `DynamicPGS` object from longitudinal phenotype, covariate, and relatedness data |
-| `gpreg1()` | Fit the population-level Gaussian-process regression model |
-| `gpreg2()` | Fit individual-level dynamic deviation components |
-| `prep_assoc()` | Prepare matrices for dynamic association mapping |
-| `getP()` | Perform dynamic association testing for genotype dosages |
-| `getDynamicPGS()` | Compute dynamic PGS over a continuous index |
-| `getDoseFromVCF()` | Extract genotype dosages from a tabix-indexed VCF |
-| `print.DynamicPGS()` | Print a summary of a `DynamicPGS` object |
-
-## Dependencies
-
-DynamicPGS currently uses the following R packages:
-
-```r
-Matrix
-CompQuadForm
-parallel
-```
-
-`tabix` is required when using `getDoseFromVCF()` with VCF files.
-
 ## Citation
 
 Citation information will be added after manuscript or package release.
