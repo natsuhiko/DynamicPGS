@@ -51,7 +51,7 @@ getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip",
     # genotype effect
     pgs = 0
     if(!is.null(adata$Beta)&!is.null(adata$allele_frequency)){
-        G=simGeno(adata2, af=adata$allele_frequency)
+        G=simDose(adata2, af=adata$allele_frequency)
         Gstar = G-adata$allele_frequency*2
         adata2$G_under_alt = G
         for(l in seq(nrow(adata$Beta))){
@@ -60,7 +60,7 @@ getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip",
     }
     adata2$y = cbind(adata2$X, tKnm)%*%beta0 + tmp + rnorm(N,0,sqrt(sigma2)) + pgs
     if(!is.null(af_null)){
-        G = simGeno(adata2, af=af_null)
+        G = simDose(adata2, af=af_null)
         adata2$G_under_null = G
     }
     if(!is.null(outdir)){
@@ -76,9 +76,9 @@ getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip",
 }
 
 
-#' Simulate genotypes from allele frequencies using the relatedness structure
+#' Simulate genotype dosages from allele frequencies using the relatedness structure
 #'
-#' `simGeno()` simulates genotype dosages from given allele frequencies using
+#' `simDose()` simulates genotype dosages from given allele frequencies using
 #' the family-wise Cholesky representation stored in a `DynamicPGS` object. The
 #' simulated genotypes approximately follow Hardy-Weinberg proportions at each
 #' variant while preserving the relatedness structure encoded in `adata$Lmat`.
@@ -122,16 +122,16 @@ getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip",
 #' adata <- getData(Data = phenotype_table, king = king_table)
 #'
 #' af <- c(0.10, 0.25, 0.40)
-#' G <- simGeno(adata, af, seed = 1)
+#' G <- simDose(adata, af, seed = 1)
 #' rownames(G)
 #'
 #' af2 <- c("chr1:12345:A:C" = 0.10, "chr2:23456:G:T" = 0.25)
-#' G2 <- simGeno(adata, af2, seed = 1)
+#' G2 <- simDose(adata, af2, seed = 1)
 #' rownames(G2)
 #' }
 #'
 #' @export
-simGeno <- function(adata, af, seed=NULL, id_col="IID", fid_col="FID"){
+simDose <- function(adata, af, seed=NULL, id_col="IID", fid_col="FID"){
     Lmat <- adata$Lmat
     if(!is.null(seed)) set.seed(seed)
     stopifnot(id_col %in% colnames(Lmat), fid_col %in% colnames(Lmat))
