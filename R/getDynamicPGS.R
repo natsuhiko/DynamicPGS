@@ -105,33 +105,33 @@ getDynamicPGS = function(adata, Gall, xstar=NULL, af=adata$allele_frequency){
 plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=1, add=FALSE, xlab="x", ylab=NULL, lwd=2, ci=TRUE, ...) {
     if(is.null(ptype)){
         ptype=0
-        if(!is.null(adata$PhiXty)){ptype=1}
-        if(!is.null(adata$PhiKdty)){ptype=2}
-        if(!is.null(adata$Beta)){ptype=3}
-        if(!is.null(adata$PGS)){ptype=4}
+        if(!is.null(x$PhiXty)){ptype=1}
+        if(!is.null(x$PhiKdty)){ptype=2}
+        if(!is.null(x$Beta)){ptype=3}
+        if(!is.null(x$PGS)){ptype=4}
     }
     
     if(ptype==1){
-        x0 = Seq(adata$support_x)
-        Knm = getK(x0, adata$ta, adata$rho)
-        Kmm = getKprime(adata$ta, adata$ta, adata$rho)
+        x0 = Seq(x$support_x)
+        Knm = getK(x0, x$ta, x$rho)
+        Kmm = getKprime(x$ta, x$ta, x$rho)
         R = chol(Kmm)
         tKnm = t(forwardsolve(t(R), t(Knm)))
-        y0 = tKnm %*% tail(adata$PhiXty, adata$M) + adata$PhiXty[1]
-        boxplot(adata$y ~ adata$x, at=x0)
+        y0 = tKnm %*% tail(x$PhiXty, x$M) + x$PhiXty[1]
+        boxplot(x$y ~ x$x, at=x0)
         lines(x0, y0, col=col, lwd=3)
     }else if(ptype==2){
         if(is.null(i)) i <- 1
-        M = adata$M
-        PhiKdty = adata$PhiKdty
-        x0 = Seq(adata$support_x)
-        Knm = getK(x0, adata$ta, adata$rho)
-        Kmm = getKprime(adata$ta, adata$ta, adata$rho)
+        M = x$M
+        PhiKdty = x$PhiKdty
+        x0 = Seq(x$support_x)
+        Knm = getK(x0, x$ta, x$rho)
+        Kmm = getKprime(x$ta, x$ta, x$rho)
         R = chol(Kmm)
         tKnm = cbind(t(forwardsolve(t(R), t(Knm))),1)
-        y0 = tKnm %*% c(c(tail(adata$PhiXty, adata$M), adata$PhiXty[1]) + PhiKdty[1:(M+1)+(i-1)*(M+1)])
-        boxplot(adata$y ~ adata$x, at=x0)
-        points(adata$x[adata$iid==adata$Lmat[i,2]], adata$y[adata$iid==adata$Lmat[i,2]], col=col, pch=20)
+        y0 = tKnm %*% c(c(tail(x$PhiXty, M), x$PhiXty[1]) + PhiKdty[1:(M+1)+(i-1)*(M+1)])
+        boxplot(x$y ~ x$x, at=x0)
+        points(x$x[x$iid==x$Lmat[i,2]], x$y[adata$iid==x$Lmat[i,2]], col=col, pch=20)
         lines(x0, y0, col=col, lwd=3)
     }else if(ptype==3){
         
