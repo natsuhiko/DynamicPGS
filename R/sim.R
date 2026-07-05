@@ -143,7 +143,7 @@ simDose <- function(adata, af, seed=NULL, id_col="IID", fid_col="FID", chr="chr0
     V <- length(af)
     #is_varid <- !is.null(af_name) && length(af_name)==V && all(grepl("^[^:]+:[0-9]+:[ACGT]+:[ACGT,]+$", af_name))
     is_varid <- !is.null(af_name) && length(af_name)==V && sum(lengths(strsplit(af_name,":"))==4)==V
-    variant_id <- if(is_varid) af_name else paste0(chr, seq_len(V), ":A:C")
+    variant_id <- if(is_varid) af_name else paste0(chr, ":", seq_len(V), ":A:C")
 
     iid <- as.character(Lmat[[id_col]])
     fid <- as.character(Lmat[[fid_col]])
