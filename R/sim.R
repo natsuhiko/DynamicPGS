@@ -71,7 +71,6 @@ getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip",
             paste(outdir, "/dose.vcf.gz",sep=""), BGZIP=BGZIP, BCFTOOLS=BCFTOOLS, index=TRUE)
     }
     
-    
     invisible(adata2)
 }
 
@@ -95,6 +94,7 @@ getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip",
 #'   Default is `"IID"`.
 #' @param fid_col Character. Column name in `adata$Lmat` containing family IDs.
 #'   Default is `"FID"`.
+#' @param chr Character. Chromosome ID for mock dosage data.
 #'
 #' @return A numeric genotype dosage matrix with variants in rows and individuals
 #'   in columns. Entries are coded as 0, 1, or 2 copies of the effect allele.
@@ -131,7 +131,7 @@ getMockData = function(adata, Nd=1000, af_null=NULL, outdir=NULL, BGZIP="bgzip",
 #' }
 #'
 #' @export
-simDose <- function(adata, af, seed=NULL, id_col="IID", fid_col="FID"){
+simDose <- function(adata, af, seed=NULL, id_col="IID", fid_col="FID", chr="chr0"){
     Lmat <- adata$Lmat
     if(!is.null(seed)) set.seed(seed)
     stopifnot(id_col %in% colnames(Lmat), fid_col %in% colnames(Lmat))
@@ -141,8 +141,9 @@ simDose <- function(adata, af, seed=NULL, id_col="IID", fid_col="FID"){
     if(any(!is.finite(af) | af <= 0 | af >= 1)) stop("af must be finite and between 0 and 1.")
 
     V <- length(af)
-    is_varid <- !is.null(af_name) && length(af_name)==V && all(grepl("^[^:]+:[0-9]+:[ACGT]+:[ACGT,]+$", af_name))
-    variant_id <- if(is_varid) af_name else paste0("chr0:", seq_len(V), ":A:C")
+    #is_varid <- !is.null(af_name) && length(af_name)==V && all(grepl("^[^:]+:[0-9]+:[ACGT]+:[ACGT,]+$", af_name))
+    is_varid <- !is.null(af_name) && length(af_name)==V && sum(lengths(strsplit(af_name,":"))==4)==length(af)
+    variant_id <- if(is_varid) af_name else paste0(chr, seq_len(V), ":A:C")
 
     iid <- as.character(Lmat[[id_col]])
     fid <- as.character(Lmat[[fid_col]])
@@ -308,7 +309,7 @@ simulate_x_from_xlist <- function(xlist, N=1000, iid=NULL, seed=1, jitter=0, rou
 #' }
 #'
 #' @export
-writeDoseToVCF = function(dose, outfile, variant_info=NULL, digits=4, sort=TRUE, id=".", BGZIP="bgzip", BCFTOOLS="bcftools", index=TURE, progress=TRUE){
+writeDoseToVCF = function(dose, outfile, variant_info=NULL, digits=4, sort=TRUE, id=".", BGZIP="bgzip", BCFTOOLS="bcftools", index=TURE, progress=F){
     if(is.null(dim(dose))) stop("'dose' must be a matrix-like object.")
     dose = as.matrix(dose)
     if(is.null(colnames(dose))) colnames(dose) = paste0("S", seq_len(ncol(dose)))
