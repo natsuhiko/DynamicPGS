@@ -102,37 +102,71 @@ getDynamicPGS = function(adata, Gall, xstar=NULL, af=adata$allele_frequency){
 #'
 #' @export
 #' @method plot DynamicPGS
-plot.DynamicPGS <- function(x, i=NULL, Prediction=FALSE, col=1, add=FALSE, xlab="x", ylab=NULL, lwd=2, ci=TRUE, ...) {
-    if(is.null(x$xstar)) stop("x$xstar is missing.")
-    if(is.null(x$PGS)) stop("x$PGS is missing.")
-    if(is.null(x$PGS_SE)) stop("x$PGS_SE is missing.")
-    if(is.null(i)) i <- 1
-
-    xstar <- x$xstar
-
-    if(Prediction){
-        if(is.null(x$pop_avg)) stop("x$pop_avg is missing.")
-        if(is.null(x$sigma2)) stop("x$sigma2 is missing.")
-        pred <- as.numeric(x$pop_avg + x$PGS[,i])
-        se <- sqrt(x$sigma2 + x$PGS_SE[,i]^2)
-        if(is.null(ylab)) ylab <- "Predicted phenotype"
-    }else{
-        pred <- as.numeric(x$PGS[,i])
-        se <- as.numeric(x$PGS_SE[,i])
-        if(is.null(ylab)) ylab <- "Dynamic PGS"
+plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=1, add=FALSE, xlab="x", ylab=NULL, lwd=2, ci=TRUE, ...) {
+    if(is.null(ptype)){
+        ptype=0
+        if(!is.null(adata$PhiXty)){ptype=1}
+        if(!is.null(adata$PhiKdty)){ptype=2}
+        if(!is.null(adata$Beta)){ptype=3}
+        if(!is.null(adata$PGS)){ptype=4}
     }
+    
+    if(ptype==1){
+        x0 = Seq(adata$support_x)
+        Knm = getK(x0, adata$ta, adata$rho)
+        Kmm = getKprime(adata$ta, adata$ta, adata$rho)
+        R = chol(Kmm)
+        tKnm = t(forwardsolve(t(R), t(Knm)))
+        y0 = tKnm %*% tail(adata$PhiXty, adata$M) + adata$PhiXty[1]
+        boxplot(adata$y ~ adata$x, at=x0)
+        lines(x0, y0, col=col, lwd=3)
+    }else if(ptype==2){
+        if(is.null(i)) i <- 1
+        M = adata$M
+        PhiKdty = adata$PhiKdty
+        x0 = Seq(adata$support_x)
+        Knm = getK(x0, adata$ta, adata$rho)
+        Kmm = getKprime(adata$ta, adata$ta, adata$rho)
+        R = chol(Kmm)
+        tKnm = cbind(t(forwardsolve(t(R), t(Knm))),1)
+        y0 = tKnm %*% c(c(tail(adata$PhiXty, adata$M), adata$PhiXty[1]) + PhiKdty[1:(M+1)+(i-1)*(M+1)])
+        boxplot(adata$y ~ adata$x, at=x0)
+        points(adata$x[adata$iid==adata$Lmat[i,2]], adata$y[adata$iid==adata$Lmat[i,2]], col=col, pch=20)
+        lines(x0, y0, col=col, lwd=3)
+    }else if(ptype==3){
+        
+    }else if(ptype==4){
+        if(is.null(x$xstar)) stop("x$xstar is missing.")
+        if(is.null(x$PGS)) stop("x$PGS is missing.")
+        if(is.null(x$PGS_SE)) stop("x$PGS_SE is missing.")
+        if(is.null(i)) i <- 1
 
-    upper <- pred + 1.96 * se
-    lower <- pred - 1.96 * se
+        xstar <- x$xstar
 
-    if(!add){
-        ylim <- if(ci) range(c(lower, upper), na.rm=TRUE) else range(pred, na.rm=TRUE)
-        plot(xstar, pred, type="n", xlab=xlab, ylab=ylab, ylim=ylim, ...)
+        if(Prediction){
+            if(is.null(x$pop_avg)) stop("x$pop_avg is missing.")
+            if(is.null(x$sigma2)) stop("x$sigma2 is missing.")
+            pred <- as.numeric(x$pop_avg + x$PGS[,i])
+            se <- sqrt(x$sigma2 + x$PGS_SE[,i]^2)
+            if(is.null(ylab)) ylab <- "Predicted phenotype"
+        }else{
+            pred <- as.numeric(x$PGS[,i])
+            se <- as.numeric(x$PGS_SE[,i])
+            if(is.null(ylab)) ylab <- "Dynamic PGS"
+        }
+
+        upper <- pred + 1.96 * se
+        lower <- pred - 1.96 * se
+
+        if(!add){
+            ylim <- if(ci) range(c(lower, upper), na.rm=TRUE) else range(pred, na.rm=TRUE)
+            plot(xstar, pred, type="n", xlab=xlab, ylab=ylab, ylim=ylim, ...)
+        }
+        if(ci){
+            polygon(c(xstar, rev(xstar)), c(upper, rev(lower)), col=Alpha(col), border=NA)
+        }
+        lines(xstar, pred, col=col, lwd=lwd)
     }
-    if(ci){
-        polygon(c(xstar, rev(xstar)), c(upper, rev(lower)), col=Alpha(col), border=NA)
-    }
-    lines(xstar, pred, col=col, lwd=lwd)
     invisible(x)
 }
 
