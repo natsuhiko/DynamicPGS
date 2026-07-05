@@ -131,7 +131,7 @@ plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=1, add=
         tKnm = cbind(t(forwardsolve(t(R), t(Knm))),1)
         y0 = tKnm %*% c(c(tail(x$PhiXty, M), x$PhiXty[1]) + PhiKdty[1:(M+1)+(i-1)*(M+1)])
         boxplot(x$y ~ x$x, at=x0)
-        points(x$x[x$iid==x$Lmat[i,2]], x$y[adata$iid==x$Lmat[i,2]], col=col, pch=20)
+        points(x$x[x$iid==x$Lmat[i,2]], x$y[x$iid==x$Lmat[i,2]], col=col, pch=20)
         lines(x0, y0, col=col, lwd=3)
     }else if(ptype==3){
         
