@@ -5,7 +5,7 @@
 #' variance components for dynamic individual effects and prepares the object for
 #' association mapping.
 #'
-#' This function requires the first-stage optimisation result from [gpreg1()].
+#' This function requires the first-stage optimisation result from [GPReg1()].
 #' At the end of optimisation, [prepAssoc()] is called automatically to compute
 #' matrices used by [getP()].
 #'
@@ -207,8 +207,13 @@ GPReg2 = function(adata, delta2d0=c(1.,1.), Verbose=F, Plot=F, ncore=max(1, para
 
         if(Verbose){ cat("iteration: "); cat(itr); cat(" | lower bound = "); cat(lball[1]); cat("\n") }
 
-        if(itr > 20 && length(lball) >= 10){
-            if((lball[1] - lball[10]) / 10 < 1e-3){
+        if(itr > 10 && length(lball) >= 5){
+            abs_gain <- (lball[1] - lball[5]) / 5
+            rel_gain <- abs_gain / max(1, abs(lball[1]))
+            if(abs_gain < 1e-2 || rel_gain < 1e-7){
+                if(Verbose){
+                    cat("Converged: abs_gain =", abs_gain, "rel_gain =", rel_gain, "\n")
+                }
                 break
             }
         }
@@ -306,7 +311,7 @@ GPReg2 = function(adata, delta2d0=c(1.,1.), Verbose=F, Plot=F, ncore=max(1, para
                 cat("fail_count =", fail_count, "\n")
             }
 
-            if(grad_norm < 1e-4){
+            if(grad_norm < 1e-3){
                 if(Verbose) cat("Treat as converged because gradient is small.\n")
                 break
             }
