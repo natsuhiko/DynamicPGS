@@ -75,12 +75,7 @@ head(colnames(Gall))
 
 In `variants` mode, `getDoseFromVCF()` first extracts records overlapping the requested positions and then keeps only records whose chromosome, position, reference allele, and alternate allele exactly match the requested `CHR:POS:REF:ALT` IDs. Missing variants are returned as rows filled with `NA`.
 
-If your VCF does not contain some of the lead variants, choose proxy variants from `adata_jecs_public$proxy`. After extracting proxy dosages, make sure that the row names of `Gall` are mapped back to the original lead variant IDs used by the model.
-
-```r
-# Example only: replace this with your selected lead-to-proxy mapping
-# rownames(Gall) <- lead_variant_ids_used_by_the_model
-```
+If your VCF does not contain some of the lead variants, you may use proxy variants listed in `adata_jecs_public$proxy`. The public model includes `Beta` and `Sinv` entries for these proxy variants. Therefore, when proxy variants are used, the row names of `Gall` must remain as the actual proxy variant IDs in `CHR:POS:REF:ALT` format. Do not rename proxy variants back to the original lead variant IDs. `getDynamicPGS()` matches variants by `intersect(rownames(Gall), rownames(adata$Beta))`; therefore, incorrect row names can cause the function to use the wrong variant-specific effect sizes `Beta`.
 
 ### 3. Compute dynamic PGS
 
