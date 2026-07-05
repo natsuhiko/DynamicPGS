@@ -129,6 +129,7 @@ plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=2, add=
     }else if(ptype==2){
         if(is.null(i)) i <- 1
         M = x$M
+        sigma2 = x$sigma2
         PhiKdty = x$PhiKdty
         x0 = Seq(x$support_x)
         Knm = getK(x0, x$ta, x$rho)
