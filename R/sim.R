@@ -324,7 +324,7 @@ writeDoseToVCF = function(dose, outfile, variant_info=NULL, digits=4, sort=TRUE,
     }else{
         if(is.null(rownames(dose))) stop("Either rownames(dose) as CHR:POS:REF:ALT or 'variant_info' is required.")
         sp = strsplit(rownames(dose), ":", fixed=TRUE)
-        if(any(lengths(sp) != 4)) stop("rownames(dose) must be in CHR:POS:REF:ALT format.")
+        if(any(lengths(sp) != 4)){print(rownames(dose)[lengths(sp) != 4]); stop("rownames(dose) must be in CHR:POS:REF:ALT format.") }
         vi = data.frame(CHR=sapply(sp, `[`, 1), POS=as.integer(sapply(sp, `[`, 2)), REF=sapply(sp, `[`, 3), ALT=sapply(sp, `[`, 4), stringsAsFactors=FALSE)
     }
     if(any(is.na(vi$POS))) stop("POS must be integer.")
