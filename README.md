@@ -6,7 +6,7 @@ The typical workflow is:
 
 ![DynamicPGS overview](man/figures/workflow.png)
 
-## Installation
+## 0. Installation
 
 Install the package from a local source directory:
 
@@ -17,11 +17,11 @@ R CMD INSTALL DynamicPGS
 
 Do not source individual files such as `source("R/getData.R")` during package development, because this may create conflicts between objects in the global environment and functions loaded from the package.
 
-## Quick start: dynamic PGS calculation using the published BMI model
+## 1. Quick start: dynamic PGS calculation using the published BMI model
 
 This section shows how to compute dynamic PGS using the pre-trained BMI model included in this package.
 
-### 1. Extract genotype dosages from a VCF file
+### 1.1. Extract genotype dosages from a VCF file
 
 First, load the package and the public example model.
 
@@ -60,7 +60,7 @@ After extracting dosages using proxy variants, make sure that the row names of `
 rownames(G) <- correct_var_id
 ```
 
-### 2. Compute dynamic PGS
+### 1.2. Compute dynamic PGS
 
 Dynamic PGS can then be computed at any target values of age or time. For example, the following code evaluates dynamic PGS from 0 to 54 months.
 
@@ -113,9 +113,9 @@ adata_with_your_pgs <- getDynamicPGS(
 
 In this case, `names(af_vector_with_var_id)` must match the variant IDs used by the model, such as `CHR:POS:REF:ALT`.
 
-## Fitting the GP regression model to your own data 
+## 2. Fitting the GP regression model to your own data 
 
-### Longitudinal phenotype data
+### 2.1. Longitudinal phenotype data
 
 The phenotype table must contain at least the following columns:
 
@@ -135,13 +135,13 @@ id002   6      15.8
 id002   18     20.1
 ```
 
-### Covariates
+### 2.2. Covariates
 
 Covariates can be supplied as a separate data.frame or file. Numeric covariates are standardised internally. Character or factor covariates are expanded into dummy variables.
 
 The number of rows in the covariate table should match the number of rows in the phenotype table.
 
-### Relatedness information
+### 2.3. Relatedness information
 
 If a KING relatedness file is supplied, DynamicPGS uses the relatedness information to construct family blocks. The KING file should contain at least:
 
@@ -153,9 +153,9 @@ If a KING relatedness file is supplied, DynamicPGS uses the relatedness informat
 
 If no KING file is supplied, all individuals are treated as unrelated.
 
-## Basic workflow
+## 3. Basic workflow for constructing a null model
 
-### 1. Create a DynamicPGS object
+### 3.1. Create a DynamicPGS object
 
 ```r
 library(DynamicPGS)
@@ -176,7 +176,7 @@ adata
 
 This prints a short summary of the number of observations, number of individuals, maximum family size, support of the continuous index, and covariate structure.
 
-### 2. Fit the population-level GP model
+### 3.2. Fit the population-level GP model
 
 ```r
 adata <- gpreg1(
@@ -191,7 +191,7 @@ adata <- gpreg1(
 
 This step estimates the population-level smooth trajectory, covariate variance components, GP length-scale parameter, and residual variance.
 
-### 3. Fit individual-level dynamic deviation components
+### 4.3. Fit individual-level dynamic deviation components
 
 ```r
 adata <- gpreg2(
@@ -217,9 +217,9 @@ adata <- prep_assoc(
 )
 ```
 
-## Genotype dosage input
+## 4. Genotype dosage input
 
-### From an indexed VCF
+### 4.1. From an indexed VCF
 
 DynamicPGS can read genotype dosages from a bgzip-compressed and tabix-indexed VCF file.
 
@@ -252,7 +252,7 @@ attr(Gall, "variant_info")
 
 If the VCF contains a `DS` field, dosages are read from `DS`. If `DS` is absent, `GT` is converted to alternate-allele dosage.
 
-### Expected dosage matrix format
+### 4.2. Dosage matrix format
 
 Association testing expects a numeric matrix with variants in rows and individuals in columns:
 
@@ -299,7 +299,7 @@ adata$Sinv
 
 `Beta = TRUE` and `Sinv = TRUE` are recommended if the next step is to compute dynamic PGS with uncertainty estimates.
 
-## Computing dynamic PGS
+## 5.1. Computing dynamic PGS
 
 After association testing, dynamic PGS can be evaluated at arbitrary values of the continuous index.
 
