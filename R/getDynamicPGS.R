@@ -102,7 +102,7 @@ getDynamicPGS = function(adata, Gall, xstar=NULL, af=adata$allele_frequency){
 #'
 #' @export
 #' @method plot DynamicPGS
-plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=1, add=FALSE, xlab="x", ylab=NULL, lwd=2, ci=TRUE, ...) {
+plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=2, add=FALSE, xlab="x", ylab=NULL, lwd=2, ci=TRUE, ...) {
     if(is.null(ptype)){
         ptype=0
         if(!is.null(x$PhiXty)){ptype=1}
@@ -136,8 +136,12 @@ plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=1, add=
         R = chol(Kmm)
         tKnm = cbind(t(forwardsolve(t(R), t(Knm))),1)
         y0 = tKnm %*% c(c(tail(x$PhiXty, M), x$PhiXty[1]) + PhiKdty[1:(M+1)+(i-1)*(M+1)])
+        flag = c(tail(seq(nrow(x$D)),M),1)
+        s = sqrt(rowSums((tKnm%*%(solve(x$D[flag,flag])+matrix(x$Phii[i,],M+1)))*tKnm)*sigma2 + ifelse(Prediction,sigma2,0))
+        
         boxplot(x$y ~ x$x, at=x0)
         points(x$x[x$iid==x$Lmat[i,2]], x$y[x$iid==x$Lmat[i,2]], col=col, pch=20)
+        polygon(c(x0,rev(x0)), c(y0-1.96*s,rev(y0+1.96*s)), col=Alpha(col), border=NA)
         lines(x0, y0, col=col, lwd=3)
     }else if(ptype==3){
         

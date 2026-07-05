@@ -191,7 +191,7 @@ SolveJitter = function(A, B = diag(nrow(A)), jitter = 1e-8, max_try = 8) {
 
 
 
-Alpha=function(col, alpha=0.1*255){r=col2rgb(col); rgb(r[1,]/255,r[2,]/255,r[3,]/255,alpha/255)}
+Alpha=function(col, alpha=0.3*255){r=col2rgb(col); rgb(r[1,]/255,r[2,]/255,r[3,]/255,alpha/255)}
 
 
 Seq <- function(x) seq(x[1], x[2], by=1)
