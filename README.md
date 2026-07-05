@@ -28,7 +28,7 @@ During package development, use `devtools::load_all()` rather than sourcing indi
 
 ## Quick start: compute dynamic PGS using the public BMI model
 
-This section shows how to compute dynamic PGS using a public pre-trained BMI model included in the package.
+This section shows how to compute dynamic PGS using the public pre-trained BMI model included in the package.
 
 ### 1. Load the public model
 
@@ -40,15 +40,15 @@ adata_jecs_public
 head(adata_jecs_public$proxy)
 ```
 
-`adata_jecs_public` is a public DynamicPGS object. Individual-level phenotype data are removed, while the model parameters required for dynamic PGS calculation are retained.
+`adata_jecs_public` is a public DynamicPGS object. Individual-level phenotype data have been removed, while the model parameters required for dynamic PGS calculation have been retained.
 
-The proxy table contains the lead variants used by the model and candidate proxy variants. Variant IDs are represented as:
+The proxy table contains the lead variants used by the model and their candidate proxy variants. Variant IDs are represented as:
 
 ```text
 CHR:POS:REF:ALT
 ```
 
-The public BMI model uses variant definitions on GRCh38. If your VCF is based on another genome build, such as GRCh37/hg19, map the coordinates and alleles to the GRCh38 representation before computing dynamic PGS.
+The public BMI model uses variant definitions based on GRCh38. If your VCF is based on another genome build, such as GRCh37/hg19, map the coordinates and alleles to the GRCh38 representation before computing dynamic PGS.
 
 ### 2. Extract genotype dosages from a VCF file
 
@@ -73,9 +73,9 @@ head(rownames(G))
 head(colnames(G))
 ```
 
-In `variants` mode, `getDoseFromVCF()` first extracts records overlapping the requested positions and then keeps only records whose chromosome, position, reference allele, and alternate allele exactly match the requested `CHR:POS:REF:ALT` IDs. Missing variants are returned as rows filled with `NA`.
+In `variants` mode, `getDoseFromVCF()` first extracts records overlapping the requested positions and then retains only records whose chromosome, position, reference allele, and alternate allele exactly match the requested `CHR:POS:REF:ALT` IDs. Missing variants are returned as rows filled with `NA`.
 
-If your VCF does not contain some of the lead variants, you may use proxy variants listed in `adata_jecs_public$proxy`. The public model includes `Beta` and `Sinv` entries for these proxy variants. Therefore, when proxy variants are used, the row names of `G` must remain as the actual proxy variant IDs in `CHR:POS:REF:ALT` format. Do not rename proxy variants back to the original lead variant IDs. `getDynamicPGS()` matches variants by `intersect(rownames(G), rownames(adata$Beta))`; therefore, incorrect row names can cause the function to use the wrong variant-specific effect sizes `Beta`.
+If your VCF does not contain some of the lead variants, you may use proxy variants listed in `adata_jecs_public$proxy`. The public model includes `Beta` and `Sinv` entries for these proxy variants. Therefore, when proxy variants are used, the row names of `G` must remain the actual proxy variant IDs in `CHR:POS:REF:ALT` format. Do not rename proxy variants back to the original lead variant IDs. `getDynamicPGS()` matches variants by `intersect(rownames(G), rownames(adata$Beta))`; therefore, incorrect row names can cause the function to use the wrong variant-specific effect sizes `Beta`.
 
 ### 3. Compute dynamic PGS
 
@@ -109,7 +109,7 @@ Plot the dynamic PGS for the first individual:
 plot(adata_with_pgs, i = 1)
 ```
 
-By default, `getDynamicPGS()` uses allele frequencies stored in the public model when available. This assumes that allele frequencies in your target population are reasonably similar to those in the reference population.
+By default, `getDynamicPGS()` uses the allele frequencies stored in the public model when available. This assumes that allele frequencies in your target population are reasonably similar to those in the reference population.
 
 To estimate allele frequencies from your dosage matrix instead, set `af = NULL`:
 
@@ -161,7 +161,8 @@ id002   18     20.1
 
 Each row corresponds to one observation. Multiple rows may belong to the same individual. The current implementation assumes that there are no duplicated observations at the same `x` value within the same individual.
 
-A small mock dataset is included under `data/MockData/` so that the full workflow can be tested without preparing external files. 
+A small mock dataset is included under `data/MockData/`, so the full workflow can be tested without preparing external files.
+
 ```text
 data/MockData/phenotype.tsv
 ```
@@ -170,7 +171,8 @@ data/MockData/phenotype.tsv
 
 Covariates can be supplied as a `data.frame` or as a file. The number of rows in the covariate table must match the number of rows in the phenotype table before missing-value filtering.
 
-Numeric covariates are standardised internally. Character or factor covariates are expanded into dummy variables. See the following mock covariate data:
+Numeric covariates are standardised internally. Character or factor covariates are expanded into dummy variables. The following mock covariate file is included:
+
 ```text
 data/MockData/covariates.tsv
 ```
@@ -185,12 +187,15 @@ Relatedness can be supplied as a KING pairwise relatedness result. The table mus
 | `ID2` | Second individual ID |
 | `Kinship` | KING kinship estimate |
 
-If no KING file is supplied, all individuals are treated as unrelated. Please check the mock KING data:
+If no KING file is supplied, all individuals are treated as unrelated. A mock KING file is included at:
+
 ```text
 data/MockData/king.kin0
 ```
 
-### 4. Create a DynamicPGS object
+## Constructing the null model
+
+### 1. Create a DynamicPGS object
 
 ```r
 # in the package directory
@@ -198,7 +203,7 @@ adata <- getData(
   Data = "data/phenotype.tsv",
   Covariates = "data/covariates.tsv",
   king = "data/king.kin0",
-  inducing_points = seq(0, 60, by = 6)
+  inducing_points = 0:11*5
 )
 ```
 
@@ -210,35 +215,30 @@ adata
 
 The print method shows a short summary, including the number of observations, number of individuals, maximum family size, support of the continuous index, and covariate structure.
 
-### 5. Fit the population-level GP model
+### 2. Fit the population-level GP model
 
 ```r
 adata <- GPReg1(
   adata,
-  rho_a = 0.01,
-  rho_b = 5,
-  Verbose = TRUE,
-  Plot = FALSE,
-  MAXITR = 100
+  Verbose = TRUE
 )
 ```
 
 `GPReg1()` estimates the population-level smooth trajectory, covariate variance components, the GP length-scale parameter `rho`, and the residual variance.
 
-### 6. Fit individual-level dynamic deviation components
+### 3. Fit individual-level dynamic deviation components
 
 ```r
 adata <- GPReg2(
   adata,
-  delta2d0 = c(1, 1),
   ncore = 4,
-  Verbose = TRUE,
-  Plot = FALSE,
-  MAXITR = 100
+  Verbose = TRUE
 )
 ```
 
-`GPReg2()` estimates variance components for individual-specific dynamic deviations. At the end of the optimisation, it calls `prepAssoc()` automatically to prepare matrices used by dynamic association testing.
+`GPReg2()` estimates variance components for individual-specific dynamic deviations. Using as many CPU cores as practical is strongly recommended, because the function repeatedly computes kernel submatrices for each individual.
+
+At the end of optimisation, `GPReg2()` automatically calls `prepAssoc()` to prepare matrices used for dynamic association testing.
 
 If needed, association-mapping matrices can be recomputed explicitly:
 
@@ -251,7 +251,7 @@ adata <- prepAssoc(
 )
 ```
 
-## Genotype dosage input
+## Genotype dosage input preparation
 
 ### Read dosages from an indexed VCF or BCF
 
@@ -261,7 +261,6 @@ To extract all variants in a region:
 G <- getDoseFromVCF(
   vcf = "dose.vcf.gz",
   region = "chr1:100000-200000",
-  field = "DS"
 )
 ```
 
@@ -273,7 +272,6 @@ variants <- c("chr1:12345:A:G", "chr1:67890:C:T")
 G <- getDoseFromVCF(
   vcf = "dose.vcf.gz",
   variants = variants,
-  field = "DS"
 )
 ```
 
@@ -289,11 +287,14 @@ variant2  1.00   0.00   0.98
 
 Rows are variants and columns are individuals. Column names should correspond to the unique individual IDs in the fitted `DynamicPGS` object.
 
-A small mock dosage data is included under `data/MockData/` so that the full workflow can be tested without preparing external files. 
+A small mock dosage dataset is included under `data/MockData/`, so the full workflow can be tested without preparing external files.
+
 ```text
 data/MockData/dose.vcf.gz
 ```
-In this data, chromosome "0" means genotype dosages were simulated under the null hypothesis and "1" means genotype dosages were simulated under the alternative hypothesis of the 238 real BMI assosiations.
+
+In this dataset, chromosome "0" indicates genotype dosages simulated under the null hypothesis, and chromosome "1" indicates genotype dosages simulated under the alternative hypothesis using the 238 real BMI associations.
+
 ```r
 L=238
 G=rbind(
@@ -318,15 +319,14 @@ af <- c("chr1:12345:A:C" = 0.10, "chr2:23456:G:T" = 0.25)
 G <- simDose(adata, af, seed = 1)
 ```
 
-## Dynamic genetic association testing
+## Dynamic genetic association mapping
 
-Run variant-level dynamic association testing:
+Run variant-level dynamic association mapping:
 
 ```r
 adata <- getP(
   adata,
   Gall = G,
-  delta2g = 0.01,
   Beta = TRUE,
   Sinv = TRUE,
   ncore = 4
@@ -393,7 +393,7 @@ The returned `DynamicPGS` object contains:
 |---|---|
 | `xstar` | Target index values |
 | `pop_avg_xstar` | Estimated population-average trajectory at `xstar` |
-| `PGS` | Dynamic PGS matrix, with rows corresponding to `xstar` and columns to samples |
+| `PGS` | Dynamic PGS matrix, with rows corresponding to `xstar` and columns corresponding to samples |
 | `PGS_SE` | Approximate standard errors of dynamic PGS |
 
 Plot the dynamic PGS for one individual:
@@ -417,24 +417,6 @@ mock <- getMockData(
 
 When `outdir` is supplied, the function writes example phenotype, covariate, KING, and dosage VCF files.
 
-## Main exported functions
-
-| Function | Purpose |
-|---|---|
-| `getData()` | Create a `DynamicPGS` object from longitudinal phenotype, covariate, and relatedness data |
-| `GPReg1()` | Fit the population-level Gaussian-process regression model |
-| `GPReg2()` | Fit individual-level dynamic deviation components |
-| `prepAssoc()` | Prepare intermediate matrices for dynamic association testing |
-| `getDoseFromVCF()` | Extract genotype dosages from an indexed VCF/BCF file |
-| `simDose()` | Simulate genotype dosages from allele frequencies and relatedness structure |
-| `getP()` | Perform dynamic genetic association testing |
-| `plotEffectSize()` | Plot time-varying SNP effect sizes |
-| `getDynamicPGS()` | Compute dynamic PGS over a continuous index |
-| `getPublicData()` | Remove individual-level data and create a public DynamicPGS object |
-| `writeDoseToVCF()` | Write a dosage matrix to a minimal VCF file |
-| `plotROCandPRC()` | Plot ROC and precision-recall curves from p-values |
-| `ppplot()` | Draw a p-p plot for p-value calibration |
-
 ## Dependencies
 
 DynamicPGS uses the following R packages:
@@ -457,3 +439,4 @@ bgzip
 ## Citation
 
 Citation information will be added after manuscript or package release.
+
