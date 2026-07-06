@@ -93,7 +93,6 @@ getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, paralle
     
     
     pval = do.call("rbind", parallel::mclapply(1:nrow(Gall), function(l){
-        print(l)
         gl = Gall[l,] # rbinom(Nd,2,0.3)
         af = mean(gl)/2
         gl = (gl-2*af) #/sqrt(af*2*(1-af))
