@@ -30,7 +30,7 @@ During package development, use `devtools::load_all()` rather than sourcing indi
 
 This section shows how to compute dynamic PGS using the public pre-trained BMI model included in the package.
 
-A runnable notebook for this workflow is available at `data/quick_start_tutorial.ipynb`.
+A runnable notebook for this workflow is available here: [data/quick_start_tutorial.ipynb](data/quick_start_tutorial.ipynb).
 
 ### 1. Load the public model
 
