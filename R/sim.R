@@ -309,7 +309,7 @@ simulate_x_from_xlist <- function(xlist, N=1000, iid=NULL, seed=1, jitter=0, rou
 #' }
 #'
 #' @export
-writeDoseToVCF = function(dose, outfile, variant_info=NULL, digits=4, sort=TRUE, id=".", BGZIP="bgzip", BCFTOOLS="bcftools", index=TURE, progress=F){
+writeDoseToVCF = function(dose, outfile, variant_info=NULL, digits=4, sort=TRUE, id=".", BGZIP="bgzip", BCFTOOLS="bcftools", index=TRUE, progress=F){
     if(is.null(dim(dose))) stop("'dose' must be a matrix-like object.")
     dose = as.matrix(dose)
     if(is.null(colnames(dose))) colnames(dose) = paste0("S", seq_len(ncol(dose)))
