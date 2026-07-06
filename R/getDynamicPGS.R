@@ -123,7 +123,7 @@ plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=2, add=
         y0 = tKnm %*% c(tail(x$PhiXty, M), x$PhiXty[1])
         flag = c(tail(seq(nrow(A)),M),1)
         s = sqrt(diag(tKnm%*%solve(A[flag,flag])%*%t(tKnm))*sigma2 + ifelse(Prediction,sigma2,0))
-        boxplot(x$y ~ x$x, at=x0)
+        boxplot(x$y ~ x$x, at=x0, xlab=xlab, ylab=ylab, ...)
         polygon(c(x0,rev(x0)), c(y0-1.96*s,rev(y0+1.96*s)), col=Alpha(col), border=NA)
         lines(x0, y0, col=col, lwd=3)
     }else if(ptype==2){
@@ -140,7 +140,7 @@ plot.DynamicPGS <- function(x, i=NULL, ptype=NULL, Prediction=FALSE, col=2, add=
         flag = c(tail(seq(nrow(x$D)),M),1)
         s = sqrt(rowSums((tKnm%*%(solve(x$D[flag,flag])+matrix(x$Phii[i,],M+1)))*tKnm)*sigma2 + ifelse(Prediction,sigma2,0))
         
-        boxplot(x$y ~ x$x, at=x0)
+        boxplot(x$y ~ x$x, at=x0, xlab=xlab, ylab=ylab, ...)
         points(x$x[x$iid==x$Lmat[i,2]], x$y[x$iid==x$Lmat[i,2]], col=col, pch=20)
         polygon(c(x0,rev(x0)), c(y0-1.96*s,rev(y0+1.96*s)), col=Alpha(col), border=NA)
         lines(x0, y0, col=col, lwd=3)
