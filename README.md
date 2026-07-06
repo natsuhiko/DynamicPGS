@@ -141,6 +141,8 @@ In this case, `names(af_vector)` should match the variant IDs used by the model.
 
 This workflow fits the null Gaussian-process model, performs dynamic association mapping, and computes dynamic PGS from the resulting effect estimates.
 
+A runnable notebook for this workflow is available here: [data/full_workflow_tutorial.ipynb](data/full_workflow_tutorial.ipynb).
+
 ### 1. Prepare longitudinal phenotype data
 
 The phenotype table must contain at least the following columns:
