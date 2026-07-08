@@ -240,7 +240,7 @@ adata <- GPReg2(
 )
 ```
 
-`GPReg2()` estimates variance components for individual-specific dynamic deviations. Using as many CPU cores as practical is strongly recommended, because the function repeatedly computes kernel submatrices for each individual.
+`GPReg2()` estimates variance components for individual-specific dynamic deviations. Using as many CPU cores as practical, as long as sufficient memory is available, is strongly recommended, because the function repeatedly computes kernel submatrices for each individual.
 
 At the end of optimisation, `GPReg2()` automatically calls `prepAssoc()` to prepare matrices used for dynamic association testing.
 
