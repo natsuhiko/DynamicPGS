@@ -197,7 +197,7 @@ getP <- function(adata, Gall, delta2g=0.01, Beta=F, Sinv=F, ncore=max(1, paralle
 #' }
 #'
 #' @export
-plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE, lwd=2, main=NULL, xlab="x", ylab="Effect size", genoEffect=F, ...){
+plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE, lwd=2, main=NULL, xlab="x", ylab="Effect size", genoEffect=F, ylim=NULL, ...){
     
     col.geno = c("#19324B", "#32C8E9", "#F51A57")
     if(genoEffect){ci=F}
@@ -247,7 +247,7 @@ plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE
     lower <- m - 1.96 * sqrt(v)
 
     if(!add){
-        ylim <- if(ci) range(c(lower, upper), na.rm=TRUE) else range(m+popavg, na.rm=TRUE)
+        if(is.null(ylim)){ ylim <- if(ci) range(c(lower, upper), na.rm=TRUE) else range(m+popavg, na.rm=TRUE) }
         plot(xstar, m, type="n", ylim=ylim, main=main, xlab=xlab, ylab=ylab, axes=FALSE, ...)
         axis(2, las=2)
         axis(1)
