@@ -248,10 +248,9 @@ plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE
 
     if(!add){
         if(is.null(ylim)){ ylim <- if(ci) range(c(lower, upper), na.rm=TRUE) else range(m+popavg, na.rm=TRUE) }
-        plot(xstar, m, type="n", ylim=ylim, main=main, xlab=xlab, ylab=ylab, axes=FALSE, axes=F, ...)
+        plot(xstar, m, type="n", ylim=ylim, main=main, xlab=xlab, ylab=ylab, axes=FALSE, ...)
         axis(2, las=2)
         axis(1)
-        box()
         abline(h=0, lty=2)
     }
 
