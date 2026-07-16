@@ -259,7 +259,7 @@ plotEffectSize <- function(adata, variant, xstar=NULL, col=1, add=FALSE, ci=TRUE
         lines(xstar, popavg + (1-af*2)*m, col=col.geno[2], lwd=lwd)
         lines(xstar, popavg + (2-af*2)*m, col=col.geno[3], lwd=lwd)
     }else{
-        if(ci) polygon(c(xstar, rev(xstar)), c(upper, rev(lower)), col=Alpha(col), border=NA)
+        if(ci) polygon(c(xstar, rev(xstar)), c(upper, rev(lower)), col=Alpha(col,25), border=NA)
         lines(xstar, m, col=col, lwd=lwd)
     }
     invisible(data.frame(x=xstar, beta=m, lower=lower, upper=upper))
