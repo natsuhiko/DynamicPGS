@@ -255,3 +255,69 @@ getDoseFromVCF = function(vcf, variants=NULL, region=NULL, samples=NULL, sample_
 
     dose
 }
+
+
+
+
+#' Generate a family-size-preserving permutation index
+#'
+#' `permute_family_index()` generates a permutation index for rows of an `Lmat`
+#' object while preserving family block sizes. Families are permuted only among
+#' other families with the same number of rows, so the resulting index can be
+#' used to shuffle individual or genotype data without changing the family-size
+#' structure.
+#'
+#' @param Lmat A data.frame containing at least a `FID` column. Typically this is
+#'   the `Lmat` element of a `DynamicPGS` object returned by [getData()].
+#' @param seed Optional integer seed for reproducible permutation.
+#'
+#' @return An integer vector of length `nrow(Lmat)`. The returned vector gives the
+#'   source row index for each destination row. For example, `x[permute_family_index(Lmat)]`
+#'   or `G[, permute_family_index(Lmat)]` can be used to permute values according
+#'   to family-size-matched blocks.
+#'
+#' @details
+#' Rows are first grouped by `Lmat$FID`. Families are then stratified by family
+#' size, and family labels are randomly permuted within each size stratum. For
+#' each destination family, the rows of a source family with the same size are
+#' assigned as the permutation index.
+#'
+#' This function preserves the ordering and size of family blocks in the
+#' destination `Lmat`, but it does not preserve pedigree relationships or
+#' Mendelian transmission patterns. It is intended for permutation procedures
+#' where family-size structure should be retained.
+#'
+#' @examples
+#' \dontrun{
+#' idx <- permute_family_index(adata$Lmat, seed = 1)
+#'
+#' # Permute individual-level values stored in the same order as adata$Lmat
+#' y_perm <- y[idx]
+#'
+#' # Permute dosage columns when columns are ordered as adata$Lmat$IID
+#' G_perm <- G[, idx]
+#' }
+#'
+#' @export
+permute_family_index = function(Lmat, seed=NULL){
+    if(!is.null(seed)) set.seed(seed)
+
+    fid = Lmat$FID
+    fam_rows = split(seq_len(nrow(Lmat)), fid)
+    fam_size = sapply(fam_rows, length)
+
+    perm_index = seq_len(nrow(Lmat))
+
+    for(sz in sort(unique(fam_size))){
+        fams = names(fam_size)[fam_size == sz]
+        fams_perm = sample(fams, length(fams), replace=FALSE)
+
+        for(k in seq_along(fams)){
+            dest = fam_rows[[fams[k]]]
+            src  = fam_rows[[fams_perm[k]]]
+            perm_index[dest] = src
+        }
+    }
+
+    as.integer(perm_index)
+}
